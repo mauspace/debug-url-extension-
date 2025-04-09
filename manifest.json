@@ -1,39 +1,17 @@
 {
     "manifest_version": 3,
-    "name": "URL Modifier Extension",
+    "name": "URL Switcher",
     "version": "1.0",
-    "description": "Change URLs based on environment and add debug parameters.",
+    "description": "Switches between DEV and QA environments",
     "permissions": [
-      "tabs",
-      "storage",
-      "declarativeNetRequest",
-      "<all_urls>"
+      "activeTab"
     ],
-    "background": {
-      "service_worker": "background.js"
-    },
-    "browser_action": {
-      "default_popup": "popup.html"
-    },
-    "icons": {
-      "16": "icon.png",
-      "48": "icon.png",
-      "128": "icon.png"
-    },
-    "host_permissions": [
-      "https://dev-nextcar.rapp.com/*",
-      "https://qa-nextcar.rapp.com/*",
-      "https://prod-nextcar.rapp.com/*",
-      "https://nextcar-usync-online.rapp.com/*"
-    ],
-    "declarative_net_request": {
-      "rule_resources": [
-        {
-          "id": "1",
-          "enabled": true,
-          "path": "rules.json"  
-        }
-      ]
+    "action": {
+      "default_popup": "popup.html",
+      "default_icon": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+      }
     }
   }
-  

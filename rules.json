@@ -1,24 +1,16 @@
 [
     {
       "id": 1,
-      "enabled": true,
-      "url_filter": "https://dev-nextcar.rapp.com/*",
+      "priority": 1,
       "action": {
         "type": "redirect",
         "redirect": {
-          "url": "https://new-url-example.com"  
+          "url": "https://dev-nextcar.rapp.com"
         }
-      }
-    },
-    {
-      "id": 2,
-      "enabled": true,
-      "url_filter": "https://qa-nextcar.rapp.com/*",
-      "action": {
-        "type": "redirect",
-        "redirect": {
-          "url": "https://new-url-example.com"  
-        }
+      },
+      "condition": {
+        "urlFilter": "https://dev-nextcar.rapp.com/*",
+        "resourceTypes": ["main_frame"]
       }
     }
   ]
