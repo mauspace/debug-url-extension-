@@ -1,10 +1,11 @@
 {
     "manifest_version": 3,
-    "name": "URL Switcher",
+    "name": "URL Modifier",
     "version": "1.0",
-    "description": "Switches between DEV and QA environments",
+    "description": "Modifies URLs with parameters and environments",
     "permissions": [
-      "activeTab"
+      "activeTab",
+      "storage"
     ],
     "action": {
       "default_popup": "popup.html",
