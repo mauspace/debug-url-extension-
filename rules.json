@@ -1,0 +1,25 @@
+[
+    {
+      "id": 1,
+      "enabled": true,
+      "url_filter": "https://dev-nextcar.rapp.com/*",
+      "action": {
+        "type": "redirect",
+        "redirect": {
+          "url": "https://new-url-example.com"  
+        }
+      }
+    },
+    {
+      "id": 2,
+      "enabled": true,
+      "url_filter": "https://qa-nextcar.rapp.com/*",
+      "action": {
+        "type": "redirect",
+        "redirect": {
+          "url": "https://new-url-example.com"  
+        }
+      }
+    }
+  ]
+  

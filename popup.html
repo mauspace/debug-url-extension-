@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Version Options</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div>
+    <h3>Set Component Versions</h3>
+    <form id="version-form">
+      <label for="header-version">Header Version:</label>
+      <input type="text" id="header-version" placeholder="e.g., 1.2.0"><br><br>
+      
+      <label for="footer-version">Footer Version:</label>
+      <input type="text" id="footer-version" placeholder="e.g., 2.0.0"><br><br>
+
+      <label for="sidebar-version">Sidebar Version:</label>
+      <input type="text" id="sidebar-version" placeholder="e.g., 0.9.8"><br><br>
+
+      <label for="environment">Select Environment:</label>
+      <select id="environment">
+        <option value="dev">Development</option>
+        <option value="qa">QA</option>
+        <option value="prod">Production</option>
+        <option value="sync">Sync Online</option>
+      </select><br><br>
+
+      <button type="submit">Save Versions</button>
+    </form>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
