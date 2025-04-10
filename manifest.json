@@ -5,7 +5,8 @@
     "description": "Modifies URLs with parameters and environments",
     "permissions": [
       "activeTab",
-      "storage"
+      "storage",
+      "activeTab"
     ],
     "action": {
       "default_popup": "popup.html",
