@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
         {
             const errorMsg = (currentTab && currentTab.status === 'loading')
                 ? 'Tab is still loading. Please wait and try adding params again.'
-                : 'Cannot get a valid URL from the current tab (or tab is not ready).';
+                : 'Cannot get a valid URL from the current tab (or tab is not ready). . add Parameter Button Click ';
             showStatus(errorMsg, true);
             console.error("URL/Status Validation Failed! (addParam)", { tabExists: !!currentTab, url: currentTab?.url, urlType: typeof currentTab?.url, status: currentTab?.status });
             return;
@@ -289,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
           {
               const errorMsg = (currentTab && currentTab.status === 'loading')
                   ? 'Tab is still loading. Please wait and try clearing params again.'
-                  : 'Cannot get a valid URL from the current tab (or tab is not ready).';
+                  : 'Cannot get a valid URL from the current tab (or tab is not ready). Clear';
               showStatus(errorMsg, true);
               console.error("URL/Status Validation Failed! (clearParams)", { tabExists: !!currentTab, url: currentTab?.url, urlType: typeof currentTab?.url, status: currentTab?.status });
               return;
@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
           {
               const errorMsg = (currentTab && currentTab.status === 'loading')
                   ? 'Tab is still loading from previous action. Please wait a moment and try again.'
-                  : 'Cannot get a valid URL from the current tab (or tab is not ready).';
+                  : 'Cannot get a valid URL from the current tab (or tab is not ready)./ Environment Select Change';
               showStatus(errorMsg, true);
               console.error("URL/Status Validation Failed! (envChange)", {
                   tabExists: !!currentTab, url: currentTab?.url,
