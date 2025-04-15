@@ -313,59 +313,54 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Environment Select Change
+  // Environment Selection Change
   if (envSelect) {
-    envSelect.addEventListener('change', (e) => {
-      const selectedEnv = e.target.value;
-      if (!selectedEnv) { showStatus("Please select a valid environment.", true); return; }
-
-      chrome.storage.sync.set({ environment: selectedEnv }, () => {
-          if (chrome.runtime.lastError) { console.error("Error saving env preference:", chrome.runtime.lastError.message); }
-          else { console.log("Env preference saved:", selectedEnv); }
-      });
+    envSelect.addEventListener('change', () => {
+      const selectedEnv = envSelect.value;
+      if (!selectedEnv) {
+        showStatus('Please select a valid environment.', true);
+        return;
+      }
 
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (chrome.runtime.lastError) { showStatus(`Query Tab Error (envChange): ${chrome.runtime.lastError.message}`, true); return; }
-          if (!tabs || tabs.length === 0) { showStatus('No active tab found (envChange).', true); return; }
-          const currentTab = tabs[0];
-          logTabDetails('envChange', currentTab);
+        if (chrome.runtime.lastError) {
+          showStatus(`Query Tab Error (envSelect): ${chrome.runtime.lastError.message}`, true);
+          return;
+        }
+        if (!tabs || tabs.length === 0) {
+          showStatus('No active tab found (envSelect).', true);
+          return;
+        }
 
-          // ** CORE FIX: VALIDATION CHECK INCLUDES STATUS **
-          if (!currentTab ||
-              typeof currentTab.url !== 'string' ||
-              currentTab.url === '' ||
-              currentTab.status !== 'complete') // <-- THE IMPORTANT CHECK
-          {
-              const errorMsg = (currentTab && currentTab.status === 'loading')
-                  ? 'Tab is still loading from previous action. Please wait a moment and try again.'
-                  : 'Cannot get a valid URL from the current tab (or tab is not ready)./ Environment Select Change';
-              showStatus(errorMsg, true);
-              console.error("URL/Status Validation Failed! (envChange)", {
-                  tabExists: !!currentTab, url: currentTab?.url,
-                  urlType: typeof currentTab?.url, status: currentTab?.status
-              });
-              return; // Stop execution
+        const currentTab = tabs[0];
+        logTabDetails('envSelectChange', currentTab);
+
+        if (!currentTab || typeof currentTab.url !== 'string' || currentTab.status !== 'complete') {
+          showStatus('Tab is not ready or URL is invalid.', true);
+          return;
+        }
+
+        const currentUrl = new URL(currentTab.url);
+        const newHost = getHostForEnv(selectedEnv);
+        if (!newHost) {
+          showStatus(`Unknown environment key: ${selectedEnv}`, true);
+          return;
+        }
+
+        // Replace the host and update the tab
+        currentUrl.hostname = newHost;
+        chrome.tabs.update(currentTab.id, { url: currentUrl.toString() }, () => {
+          if (chrome.runtime.lastError) {
+            showStatus(`Error switching environment: ${chrome.runtime.lastError.message}`, true);
+          } else {
+            console.log(`Switched to ${selectedEnv}. Closing popup.`);
+            window.close();
           }
-          // ** END FIX **
-
-          const tabId = currentTab.id;
-          const tabUrl = currentTab.url;
-          if (!tabId) { showStatus('Could not get tab ID (envChange).', true); return; }
-
-          if (!isValidUrl(tabUrl)) { showStatus(`Current tab URL is not valid HTTP/HTTPS: ${tabUrl}`, true); return; }
-
-          try {
-            const url = new URL(tabUrl); const newHost = getHostForEnv(selectedEnv);
-            if (url.hostname.toLowerCase() === newHost) { showStatus(`Already on ${selectedEnv} (${newHost}).`, false); return; }
-            url.hostname = newHost;
-            chrome.tabs.update(tabId, { url: url.toString() }, () => {
-                 if (chrome.runtime.lastError) { showStatus(`Error switching env: ${chrome.runtime.lastError.message}`, true); }
-                 else { showStatus(`Switched to ${selectedEnv}.`, false); }
-            });
-          } catch (error) { showStatus(`Error preparing to switch env: ${error.message}`, true); }
+        });
       });
     });
   }
+
 
   // Value Suggestions Click Handler (Event Delegation)
   if (valueSuggestionsDiv) {
