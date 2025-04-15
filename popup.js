@@ -104,14 +104,20 @@ document.addEventListener('DOMContentLoaded', () => {
         prod_newcar: 'prod-ocj-enterpriseplatform.rapp.com',
         usync_newcar: 'usync-online.rapp.com', // Verify this hostname if needed
 
-        acar: 'prod-a-car-my-car.rapp.com',
-        acar_usync: 'usync-online-a-car-my-car.rapp.com',
+        dev_acar: 'dev-a-car-my-car.rapp.com',
+        qa_acar_usync: 'qa-a-car-my-car.rapp.com',
+        prod_acar: 'prod-a-car-my-car.rapp.com',
+        usync_acar: 'usync-online-a-car-my-car.rapp.com',
 
-        fs: 'prod-fs.rapp.com',
-        fs_usync: 'usync-online-fs.rapp.com',
+        dev_fs: 'dev-fs.rapp.com',
+        qa_fs: 'qa-fs.rapp.com',
+        prod_fs: 'prod-fs.rapp.com',
+        usync_fs: 'usync-online-fs.rapp.com',
 
-        retail: 'prod-retail.rapp.com',
-        retail_usync: 'retail-usync-online.rapp.com',
+        dev_retail: 'dev-retail.rapp.com',
+        qa_retail: 'qa-retail.rapp.com',
+        prod_retail: 'prod-retail.rapp.com',
+        usync_retail: 'retail-usync-online.rapp.com',
     };
     // No default needed if filtering works correctly and selection is handled.
     // If a key is passed that isn't here, it will return undefined.
