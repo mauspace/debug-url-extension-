@@ -1,444 +1,230 @@
+// popup.js (Combined Logic - URL Tools & Pixel Overlay with Icon Toolbar & Lock Fix)
 document.addEventListener('DOMContentLoaded', () => {
-  // --- DOM Element IDs ---
-  const EL_IDS = {
-    addParamButton: 'addParam',
-    paramNameSelect: 'paramNameSelect',
-    paramNameCustom: 'paramNameCustom',
-    paramValue: 'paramValue',
-    clearParamsButton: 'clearParams',
-    environmentSelect: 'environmentSelect', // Keep only one reference
-    valueSuggestions: 'valueSuggestions',
-    status: 'status',
-    loadingSpinner: 'loadingSpinner' // Assuming spinner HTML/CSS is still desired
-  };
-
-  // --- Get DOM Elements ---
-  const addParamButton = document.getElementById(EL_IDS.addParamButton);
-  const paramNameSelect = document.getElementById(EL_IDS.paramNameSelect);
-  const paramNameCustom = document.getElementById(EL_IDS.paramNameCustom);
-  const paramValueInput = document.getElementById(EL_IDS.paramValue);
-  const clearParamsButton = document.getElementById(EL_IDS.clearParamsButton);
-  const envSelect = document.getElementById(EL_IDS.environmentSelect); // Use this one consistently
-  const valueSuggestionsDiv = document.getElementById(EL_IDS.valueSuggestions);
-  const statusDiv = document.getElementById(EL_IDS.status);
-  const loadingSpinner = document.getElementById(EL_IDS.loadingSpinner); // Get spinner
-
-  // --- Configuration & State ---
-  const paramSuggestions = {
-    names: ['debug', 'rtest'],
-    values: ['true', 'params', 'style', 'section', 'info'],
-  };
-  const MAX_SUGGESTIONS = 20;
-  let statusClearTimer = null;
-  const STATUS_CLEAR_DELAY_MS = 3000;
-  let isOperating = false; // Bring back for potential re-integration
-
-  // --- Helper Functions ---
-
-   /** Disables/Enables form controls AND toggles spinner */
-   function setControlsDisabled(disabled) {
-    // ...(same as previous spinner version)...
-      if (addParamButton) addParamButton.disabled = disabled;
-      if (clearParamsButton) clearParamsButton.disabled = disabled;
-      if (envSelect) envSelect.disabled = disabled;
-      if (paramNameSelect) paramNameSelect.disabled = disabled;
-      if (paramNameCustom) paramNameCustom.disabled = disabled;
-      if (paramValueInput) paramValueInput.disabled = disabled;
-      isOperating = disabled;
-
-      if (loadingSpinner) {
-          if (disabled) { loadingSpinner.classList.add('active'); }
-          else { loadingSpinner.classList.remove('active'); }
-      }
-  }
-
-  function showStatus(message, isError = false) {
-    // ...(same as previous spinner version)...
-     if (!message || typeof message !== 'string' || message.trim() === '') { return; }
-    const trimmedMessage = message.trim();
-    if (isError) { console.error("Status:", trimmedMessage); } else { console.log("Status:", trimmedMessage); }
-    if (statusDiv) {
-        if (statusClearTimer) { clearTimeout(statusClearTimer); statusClearTimer = null; }
-        statusDiv.textContent = trimmedMessage;
-        statusDiv.style.color = isError ? 'red' : 'green';
-        statusClearTimer = setTimeout(() => {
-            const currentStatusDiv = document.getElementById(EL_IDS.status);
-            if (currentStatusDiv && currentStatusDiv.textContent === trimmedMessage) {
-                 currentStatusDiv.textContent = ''; currentStatusDiv.style.color = '';
-            }
-            statusClearTimer = null;
-        }, STATUS_CLEAR_DELAY_MS);
-    } else { console.warn(`Status element "${EL_IDS.status}" not found.`); }
-  }
-
-  function isValidUrl(urlString) {
-    // ...(same as previous spinner version)...
-    if (!urlString || typeof urlString !== 'string') { return false; }
-    try {
-      const url = new URL(urlString); return ['http:', 'https:'].includes(url.protocol);
-    } catch (e) { return false; }
-  }
-
-  /** Detect platform from hostname */
-  function detectPlatform(hostname) {
-    const lowerHost = hostname.toLowerCase(); // Ensure case-insensitive matching
-    if (lowerHost.includes('nextcar')) return 'nextcar';
-    if (lowerHost.includes('enterpriseplatform')) return 'newcar'; // Original logic
-    if (lowerHost.includes('a-car') || lowerHost.includes('my-car')) return 'acar';
-    if (lowerHost.includes('fs.')) return 'fs'; // Added dot for specificity? Adjust if needed.
-    if (lowerHost.includes('retail.')) return 'retail'; // Added dot for specificity? Adjust if needed.
-    return null;
-  }
-
-  /** Gets the corresponding hostname for a given environment key. */
-  function getHostForEnv(env) {
-    const map = {
-        // Keys should match the <option> values exactly
-        dev_nextcar: 'dev-nextcar.rapp.com',
-        qa_nextcar: 'qa-nextcar.rapp.com',
-        prod_nextcar: 'prod-nextcar.rapp.com',
-        usync_nextcar: 'nextcar-usync-online.rapp.com',
-
-        dev_newcar: 'dev-ocj-enterpriseplatform.rapp.com',
-        qa_newcar: 'qa-ocj-enterpriseplatform.rapp.com',
-        prod_newcar: 'prod-ocj-enterpriseplatform.rapp.com',
-        usync_newcar: 'usync-online.rapp.com', // Verify this hostname if needed
-
-        dev_acar: 'dev-a-car-my-car.rapp.com',
-        qa_acar_usync: 'qa-a-car-my-car.rapp.com',
-        prod_acar: 'prod-a-car-my-car.rapp.com',
-        usync_acar: 'usync-online-a-car-my-car.rapp.com',
-
-        dev_fs: 'dev-fs.rapp.com',
-        qa_fs: 'qa-fs.rapp.com',
-        prod_fs: 'prod-fs.rapp.com',
-        usync_fs: 'usync-online-fs.rapp.com',
-
-        dev_retail: 'dev-retail.rapp.com',
-        qa_retail: 'qa-retail.rapp.com',
-        prod_retail: 'prod-retail.rapp.com',
-        usync_retail: 'retail-usync-online.rapp.com',
+    const EL_IDS = {
+        addParamButton: 'addParam', paramNameSelect: 'paramNameSelect', paramNameCustom: 'paramNameCustom',
+        paramValue: 'paramValue', clearParamsButton: 'clearParams', environmentSelect: 'environmentSelect',
+        valueSuggestions: 'valueSuggestions', status: 'status', loadingSpinnerUrlTools: 'loadingSpinnerUrlTools',
+        toggleSfmcUnwrapperButton: 'toggleSfmcUnwrapper',
+        imageUpload: 'imageUpload', overlayControls: 'overlayControls',
+        overlayIconToolbar: 'overlayIconToolbar', iconToggleVisibility: 'iconToggleVisibility', iconToggleLock: 'iconToggleLock',
+        overlayPosX: 'overlayPosX', overlayPosY: 'overlayPosY', overlayOpacity: 'overlayOpacity',
+        overlayOpacityValue: 'overlayOpacityValue', overlayScaleInput: 'overlayScaleInput',
+        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay'
     };
-    // No default needed if filtering works correctly and selection is handled.
-    // If a key is passed that isn't here, it will return undefined.
-    return map[env];
-  }
+    const STORAGE_KEYS = {
+        paramNames: 'paramNames', paramValues: 'paramValues', environment: 'environment',
+        sfmcUnwrapperEnabled: 'sfmcUnwrapperEnabled', overlayImage: 'toolkitOverlayImage',
+        overlaySettings: 'toolkitOverlaySettings'
+    };
 
-  // --- Functions related to suggestions (saveSuggestion, updateParamNameDropdown, showValueSuggestions)
-  // remain the same as the previous spinner version ---
-  function saveSuggestion(name, value) { /* ... same ... */
-        if (!name || !value) return;
-        chrome.storage.sync.get(['paramNames', 'paramValues'], (data) => {
-        if (chrome.runtime.lastError) { console.error("Error getting storage suggestions:", chrome.runtime.lastError.message); return; }
-        const namesSet = new Set(data.paramNames || []);
-        const valuesSet = new Set(data.paramValues || []);
-        let changed = false;
-        if (!namesSet.has(name)) { namesSet.add(name); changed = true; }
-        if (!valuesSet.has(value)) { valuesSet.add(value); changed = true; }
-        if (changed) {
-             // Add limit logic if needed
-            let namesArr = [...namesSet].sort();
-            let valuesArr = [...valuesSet].sort();
-            if (namesArr.length > MAX_SUGGESTIONS) namesArr = namesArr.slice(namesArr.length - MAX_SUGGESTIONS);
-             if (valuesArr.length > MAX_SUGGESTIONS) valuesArr = valuesArr.slice(valuesArr.length - MAX_SUGGESTIONS);
+    const DOMElements = {};
+    for (const key in EL_IDS) { DOMElements[key] = document.getElementById(EL_IDS[key]); }
 
-            chrome.storage.sync.set({ paramNames: namesArr, paramValues: valuesArr }, () => {
-                if (chrome.runtime.lastError) { console.error("Error saving suggestions:", chrome.runtime.lastError.message); showStatus("Failed to save suggestions.", true); }
-                else { console.log("Suggestions saved:", { name, value }); updateParamNameDropdown(); showValueSuggestions(); }
-            });
+    const PREDEFINED_PARAMS = { names: ['debug','rtest','utm_source'], values: ['true','params','style','info','false','email'] };
+    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 6;
+    let statusClearTimer = null; const STATUS_CLEAR_DELAY_MS = 3500;
+
+    function showStatus(message, isError=false, isOverlayStatus=false) {
+        if (!DOMElements.status) { console.error("Popup Error: #status element missing!"); return; }
+        const displayMessage = (typeof message === 'string' || message instanceof String) ? message.trim() : (isError ? "An error occurred." : "Done.");
+        if (isError) console.error("Popup Status:", displayMessage); if (statusClearTimer) clearTimeout(statusClearTimer);
+        DOMElements.status.textContent = displayMessage; DOMElements.status.className = '';
+        if (isError) DOMElements.status.classList.add('error');
+        else if (isOverlayStatus) DOMElements.status.classList.add('info');
+        else DOMElements.status.classList.add('success');
+        statusClearTimer = setTimeout(() => { if (DOMElements.status.textContent === displayMessage) { DOMElements.status.textContent = ''; DOMElements.status.className = ''; } }, STATUS_CLEAR_DELAY_MS);
+    }
+    function isValidHttpUrl(u) { try { const url=new URL(u);return['http:','https:'].includes(url.protocol); } catch(e){return false;} }
+    async function getActiveValidTab() {
+        try { const [tab] = await chrome.tabs.query({ active: true, currentWindow: true }); if (!tab) throw new Error('No active tab found.'); if (!tab.id) throw new Error('Could not get tab ID.'); if (!isValidHttpUrl(tab.url)) throw new Error('Page is not HTTP/HTTPS.'); return { tab, urlObject: new URL(tab.url) }; } catch (error) { showStatus(error.message || "Error getting active tab.", true); throw error; }
+    }
+
+    function setControlsDisabled(group, busy) {
+        console.log(`[POPUP DEBUG] setControlsDisabled called for group: '${group}', busy: ${busy}`);
+        let elementsToProcess; const spinner = group === 'urlTools' ? DOMElements.loadingSpinnerUrlTools : DOMElements.loadingSpinnerOverlay;
+        if (group === 'urlTools') {
+            elementsToProcess = [DOMElements.addParamButton, DOMElements.paramNameSelect, DOMElements.paramNameCustom, DOMElements.paramValue, DOMElements.clearParamsButton, DOMElements.envSelect];
+            elementsToProcess.forEach(el => { if (el) el.disabled = busy; });
+        } else if (group === 'overlay') {
+            const mainOverlayInputs = [DOMElements.overlayPosX, DOMElements.overlayPosY, DOMElements.overlayOpacity, DOMElements.overlayScaleInput];
+            const isLocked = currentOverlaySettings && currentOverlaySettings.locked;
+            console.log(`[POPUP DEBUG] setControlsDisabled (overlay) - isLocked: ${isLocked}, current imageData: ${!!currentOverlaySettings.imageData}, busy: ${busy}`);
+            mainOverlayInputs.forEach(el => { if (el) el.disabled = busy || isLocked; });
+            if (DOMElements.imageUpload) DOMElements.imageUpload.disabled = busy || (isLocked && currentOverlaySettings.imageData);
+            const noImageData = !currentOverlaySettings.imageData;
+            if (DOMElements.iconToggleVisibility) DOMElements.iconToggleVisibility.disabled = busy || noImageData;
+            if (DOMElements.iconToggleLock) DOMElements.iconToggleLock.disabled = busy || noImageData;
+            if (DOMElements.resetOverlayButton) DOMElements.resetOverlayButton.disabled = busy || noImageData;
+            console.log(`[POPUP DEBUG] setControlsDisabled (overlay) - PosX.disabled: ${DOMElements.overlayPosX ? DOMElements.overlayPosX.disabled : 'N/A'}`);
         }
-        });
-    }
-  function updateParamNameDropdown() { /* ... same ... */
-        if (!paramNameSelect) return;
-        chrome.storage.sync.get(['paramNames'], (data) => {
-        if (chrome.runtime.lastError) { console.error("Error getting paramNames:", chrome.runtime.lastError.message); showStatus("Could not load name suggestions.", true); return; }
-        const savedNames = data.paramNames || [];
-        const allNames = [...new Set([...paramSuggestions.names, ...savedNames])].sort();
-        const currentSelectedValue = paramNameSelect.value;
-        paramNameSelect.innerHTML = '<option value="">-- Select or type custom --</option>';
-        allNames.forEach(name => { const option = document.createElement('option'); option.value = name; option.textContent = name; paramNameSelect.appendChild(option); });
-        if (allNames.includes(currentSelectedValue)) { paramNameSelect.value = currentSelectedValue; }
-        });
-    }
-  function showValueSuggestions() { /* ... same ... */
-        if (!valueSuggestionsDiv) return;
-        chrome.storage.sync.get(['paramValues'], (data) => {
-            if (chrome.runtime.lastError) { console.error("Error getting paramValues:", chrome.runtime.lastError.message); valueSuggestionsDiv.textContent = 'Error loading value suggestions.'; valueSuggestionsDiv.style.color = 'red'; return; }
-            const savedValues = data.paramValues || [];
-            const allValues = [...new Set([...paramSuggestions.values, ...savedValues])].sort();
-            const suggestionsToShow = allValues.slice(0, 5);
-            valueSuggestionsDiv.innerHTML = 'Suggestions: '; valueSuggestionsDiv.style.color = '';
-            if (suggestionsToShow.length === 0) { const i = document.createElement('i'); i.textContent = 'None yet'; valueSuggestionsDiv.appendChild(i); return; }
-            suggestionsToShow.forEach((value, index) => {
-                const span = document.createElement('span'); span.textContent = value; span.className = 'value-suggestion'; span.dataset.value = value;
-                span.style.cssText = 'cursor: pointer; text-decoration: underline; margin-left: 5px;'; span.title = `Click to use '${value}'`;
-                valueSuggestionsDiv.appendChild(span);
-                if (index < suggestionsToShow.length - 1) { valueSuggestionsDiv.appendChild(document.createTextNode(', ')); }
-            });
-        });
+        if (spinner) spinner.classList.toggle('active', busy);
     }
 
-  function logTabDetails(context, currentTab) { /* ... same ... */
-        console.group(`Debugging Tab Info (${context})`);
-        console.log("  Timestamp:", new Date().toISOString());
-        console.log("  currentTab exists:", !!currentTab);
-        if (currentTab) {
-            console.log("  currentTab.id:", currentTab.id);
-            console.log("  currentTab.url:", currentTab.url);
-            console.log("  typeof currentTab.url:", typeof currentTab.url);
-            console.log("  currentTab.status:", currentTab.status);
-            console.log("  currentTab.title:", currentTab.title);
-        } else {
-            console.log("  currentTab object is missing or falsy.");
+    // --- URL TOOLS LOGIC ---
+    async function saveSuggestion(name,value){if(!name||!value)return;try{const t=await chrome.storage.sync.get([STORAGE_KEYS.paramNames,STORAGE_KEYS.paramValues]),e=new Set(t[STORAGE_KEYS.paramNames]||[]),o=new Set(t[STORAGE_KEYS.paramValues]||[]);let n=!1;e.has(name)||PREDEFINED_PARAMS.names.includes(name)||(e.add(name),n=!0),o.has(value)||PREDEFINED_PARAMS.values.includes(value)||(o.add(value),n=!0),n&&await chrome.storage.sync.set({[STORAGE_KEYS.paramNames]:[...e].sort().slice(-MAX_SUGGESTIONS_STORED),[STORAGE_KEYS.paramValues]:[...o].sort().slice(-MAX_SUGGESTIONS_STORED)})}catch(t){console.error("Error saving suggestion:",t),showStatus("Failed to save suggestion.",!0)}}
+    async function updateParamNameDropdown(){if(!DOMElements.paramNameSelect)return;try{const t=await chrome.storage.sync.get([STORAGE_KEYS.paramNames]),e=t[STORAGE_KEYS.paramNames]||[],o=[...new Set([...PREDEFINED_PARAMS.names,...e])].sort(),n=DOMElements.paramNameCustom?DOMElements.paramNameCustom.value:"",s=DOMElements.paramNameSelect.value;DOMElements.paramNameSelect.innerHTML='<option value="">-- Select or type custom --</option>',o.forEach(t=>{const e=document.createElement("option");e.value=t,e.textContent=t,DOMElements.paramNameSelect.appendChild(e)}),n&&document.activeElement!==DOMElements.paramNameSelect?DOMElements.paramNameSelect.value="":o.includes(s)?DOMElements.paramNameSelect.value=s:DOMElements.paramNameCustom&&DOMElements.paramNameCustom.value&&(DOMElements.paramNameSelect.value="")}catch(t){console.error("Error loading name suggestions:",t),showStatus("Could not load name suggestions.",!0)}}
+    async function renderValueSuggestions(){if(!DOMElements.valueSuggestions)return;try{const t=await chrome.storage.sync.get([STORAGE_KEYS.paramValues]),e=t[STORAGE_KEYS.paramValues]||[],o=[...new Set([...PREDEFINED_PARAMS.values,...e])].sort(),n=o.slice(0,MAX_SUGGESTIONS_DISPLAYED);DOMElements.valueSuggestions.innerHTML=n.length>0?"Suggestions: ":"<i>No value suggestions.</i>",n.forEach(t=>{const e=document.createElement("span");e.textContent=t,e.className="value-suggestion",e.dataset.value=t,e.title=`Use '${t}'`,DOMElements.valueSuggestions.appendChild(e),DOMElements.valueSuggestions.appendChild(document.createTextNode(" "))})}catch(t){console.error("Error loading value suggestions:",t),DOMElements.valueSuggestions.innerHTML="<i>Error loading.</i>"}}
+    if(DOMElements.valueSuggestions)DOMElements.valueSuggestions.addEventListener("click",t=>{t.target.classList.contains("value-suggestion")&&DOMElements.paramValue&&(DOMElements.paramValue.value=t.target.dataset.value,DOMElements.paramValue.focus())});if(DOMElements.paramNameSelect)DOMElements.paramNameSelect.addEventListener("change",()=>{DOMElements.paramNameCustom&&""!==DOMElements.paramNameSelect.value&&(DOMElements.paramNameCustom.value="")});if(DOMElements.paramNameCustom)DOMElements.paramNameCustom.addEventListener("input",()=>{DOMElements.paramNameSelect&&""!==DOMElements.paramNameCustom.value&&(DOMElements.paramNameSelect.value="")});
+    function detectPlatform(t){const e=t.toLowerCase();return e.includes("nextcar")?"nextcar":e.includes("enterpriseplatform")?"newcar":e.includes("a-car")||e.includes("my-car")?"acar":e.includes("fs.")?"fs":e.includes("retail.")?"retail":(console.log("[POPUP DEBUG] detectPlatform did not identify platform for hostname:",t),null)}
+    function getHostForEnv(t){console.log("[POPUP DEBUG] getHostForEnv called with key:",t);const e={dev_nextcar:"dev-nextcar.rapp.com",qa_nextcar:"qa-nextcar.rapp.com",prod_nextcar:"prod-nextcar.rapp.com",usync_nextcar:"nextcar-usync-online.rapp.com",dev_newcar:"dev-ocj-enterpriseplatform.rapp.com",qa_newcar:"qa-ocj-enterpriseplatform.rapp.com",prod_newcar:"prod-ocj-enterpriseplatform.rapp.com",usync_newcar:"usync-online.rapp.com",dev_acar:"dev-a-car-my-car.rapp.com",qa_acar:"qa-a-car-my-car.rapp.com",prod_acar:"prod-a-car-my-car.rapp.com",usync_acar:"usync-online-a-car-my-car.rapp.com",dev_fs:"dev-fs.rapp.com",qa_fs:"qa-fs.rapp.com",prod_fs:"prod-fs.rapp.com",usync_fs:"usync-online-fs.rapp.com",dev_retail:"dev-retail.rapp.com",qa_retail:"qa-retail.rapp.com",prod_retail:"prod-retail.rapp.com",usync_retail:"retail-usync-online.rapp.com"},o=e[t];return console.log("[POPUP DEBUG] getHostForEnv returning host:",o,"for key:",t),o}
+    if(DOMElements.addParamButton)DOMElements.addParamButton.addEventListener("click",async()=>{const t=DOMElements.paramNameSelect?DOMElements.paramNameSelect.value:"",e=DOMElements.paramNameCustom?DOMElements.paramNameCustom.value.trim():"",o=e||t,n=DOMElements.paramValue?DOMElements.paramValue.value.trim():"";if(!o)return showStatus("Param name required.",!0),(DOMElements.paramNameCustom||DOMElements.paramNameSelect)?.focus(),void 0;if(!n)return showStatus("Param value required.",!0),DOMElements.paramValue?.focus(),void 0;e&&/[&=?#]/.test(e)&&showStatus("Warning: Custom name has special chars.",!0),setControlsDisabled("urlTools",!0);try{const{tab:t,urlObject:e}=await getActiveValidTab(),s=o.split(",").map(t=>t.trim()).filter(Boolean),a=n.split(",").map(t=>t.trim()).filter(Boolean);if(!s.length||!a.length)return void showStatus("No valid names/values.",!0);let r=0;for(let t=0;t<Math.min(s.length,a.length);t++)e.searchParams.set(s[t],a[t]),await saveSuggestion(s[t],a[t]),r++;r>0?(await chrome.tabs.update(t.id,{url:e.toString()}),showStatus(`Added ${r} param(s).`,!1),DOMElements.paramNameCustom&&(DOMElements.paramNameCustom.value=""),DOMElements.paramValue&&(DOMElements.paramValue.value=""),DOMElements.paramNameSelect&&(DOMElements.paramNameSelect.value=""),await updateParamNameDropdown(),await renderValueSuggestions()):showStatus("No params added.",!0)}catch(t){console.error("Add param error:",t.message)}finally{setControlsDisabled("urlTools",!1)}});
+    if(DOMElements.clearParamsButton)DOMElements.clearParamsButton.addEventListener("click",async()=>{setControlsDisabled("urlTools",!0);try{const{tab:t,urlObject:e}=await getActiveValidTab();if(!e.search)return void showStatus("No params to clear.",!1);e.search="",await chrome.tabs.update(t.id,{url:e.toString()}),showStatus("Params cleared.",!1)}catch(t){console.error("Clear params error:",t.message)}finally{setControlsDisabled("urlTools",!1)}});
+    if(DOMElements.envSelect)DOMElements.envSelect.addEventListener("change",async t=>{const e=t.target.value;if(console.log("[POPUP DEBUG] EnvSelect 'change' event. Selected key:",e),!e)return console.log("[POPUP DEBUG] EnvSelect: No key selected, returning."),void 0;setControlsDisabled("urlTools",!0);try{await chrome.storage.sync.set({[STORAGE_KEYS.environment]:e}),console.log("[POPUP DEBUG] EnvSelect: Saved preference to storage:",e);const{tab:t,urlObject:o}=await getActiveValidTab();console.log("[POPUP DEBUG] EnvSelect: Got active valid tab. URL:",o.href);const n=getHostForEnv(e);if(!n)showStatus(`Unknown env key: ${e}`,!0),console.warn("[POPUP DEBUG] EnvSelect: newHost is undefined for key:",e);else if(o.hostname.toLowerCase()===n.toLowerCase())showStatus(`Already on ${e.split("_")[0]}.`,!1),console.log("[POPUP DEBUG] EnvSelect: Already on target host.");else{o.hostname=n,console.log("[POPUP DEBUG] EnvSelect: Attempting to update tab to new URL:",o.toString()),await chrome.tabs.update(t.id,{url:o.toString()}),showStatus(`Switched to ${e.split("_")[0]}.`,!1),console.log("[POPUP DEBUG] EnvSelect: Tab update initiated. Closing popup."),setTimeout(()=>window.close(),700)}}catch(t){DOMElements.status&&!DOMElements.status.textContent.trim()||showStatus(t.message||"Error switching environment.",!0),console.error("Popup: Env switch error caught:",t.message,t)}finally{document.visibilityState==="visible"&&DOMElements.addParamButton&&DOMElements.addParamButton.disabled?(console.log("[POPUP DEBUG] EnvSelect: 'finally' block, re-enabling URL tools controls."),setControlsDisabled("urlTools",!1)):console.log("[POPUP DEBUG] EnvSelect: 'finally' block, not re-enabling controls.")}});
+    function updateSfmcUnwrapperButtonUI(t){if(!DOMElements.toggleSfmcUnwrapperButton)return;DOMElements.toggleSfmcUnwrapperButton.textContent=`SFMC Unwrapper: ${t?"ON":"OFF"}`,DOMElements.toggleSfmcUnwrapperButton.classList.toggle("enabled",t),DOMElements.toggleSfmcUnwrapperButton.classList.toggle("disabled",!t)}
+    async function loadSfmcUnwrapperState(){if(!DOMElements.toggleSfmcUnwrapperButton)return;try{const t=await chrome.storage.sync.get(STORAGE_KEYS.sfmcUnwrapperEnabled);updateSfmcUnwrapperButtonUI(void 0!==t[STORAGE_KEYS.sfmcUnwrapperEnabled]?t[STORAGE_KEYS.sfmcUnwrapperEnabled]:!0)}catch(t){console.error("Error loading SFMC state:",t),updateSfmcUnwrapperButtonUI(!0)}}
+    if(DOMElements.toggleSfmcUnwrapperButton)DOMElements.toggleSfmcUnwrapperButton.addEventListener("click",async()=>{try{const t=await chrome.storage.sync.get(STORAGE_KEYS.sfmcUnwrapperEnabled),e=!(void 0!==t[STORAGE_KEYS.sfmcUnwrapperEnabled]?t[STORAGE_KEYS.sfmcUnwrapperEnabled]:!0);await chrome.storage.sync.set({[STORAGE_KEYS.sfmcUnwrapperEnabled]:e}),updateSfmcUnwrapperButtonUI(e),showStatus(`SFMC Unwrapper ${e?"ENABLED":"DISABLED"}.`,!1)}catch(t){showStatus(t.message||"Error toggling SFMC.",!0)}});
+
+    // --- PIXEL OVERLAY LOGIC ---
+    let currentOverlaySettings = { x:0, y:0, opacity:1, scale:1, visible:true, locked:false, imageData:null };
+
+    function updateOverlayControlsUI() {
+        if (!DOMElements.overlayControls || !DOMElements.overlayIconToolbar || !DOMElements.overlayPosX || !DOMElements.overlayPosY || !DOMElements.overlayOpacity || !DOMElements.overlayOpacityValue || !DOMElements.overlayScaleInput || !DOMElements.iconToggleVisibility || !DOMElements.iconToggleLock ) { console.warn("Overlay Logic: UI elements missing for updateOverlayControlsUI"); return; }
+        DOMElements.overlayPosX.value = currentOverlaySettings.x; DOMElements.overlayPosY.value = currentOverlaySettings.y;
+        DOMElements.overlayOpacity.value = Math.round(currentOverlaySettings.opacity*100); DOMElements.overlayOpacityValue.textContent = Math.round(currentOverlaySettings.opacity*100);
+        DOMElements.overlayScaleInput.value = currentOverlaySettings.scale.toFixed(2);
+        if (DOMElements.iconToggleVisibility) {
+            DOMElements.iconToggleVisibility.innerHTML = currentOverlaySettings.visible ? 'VIS' : '<span style="color:#999;text-decoration:line-through;">VIS</span>';
+            DOMElements.iconToggleVisibility.title = currentOverlaySettings.visible ? "Hide Overlay" : "Show Overlay";
+            DOMElements.iconToggleVisibility.classList.toggle('active-vis', currentOverlaySettings.visible); DOMElements.iconToggleVisibility.classList.toggle('inactive-vis', !currentOverlaySettings.visible);
         }
-        console.groupEnd();
+        if (DOMElements.iconToggleLock) {
+            DOMElements.iconToggleLock.innerHTML = currentOverlaySettings.locked ? 'LCKD' : 'LOCK';
+            DOMElements.iconToggleLock.title = currentOverlaySettings.locked ? "Unlock Controls" : "Lock Controls";
+            DOMElements.iconToggleLock.classList.toggle('active-lock', currentOverlaySettings.locked); DOMElements.iconToggleLock.classList.toggle('inactive-lock', !currentOverlaySettings.locked);
+        }
+        const isOverlayCurrentlyBusy = DOMElements.loadingSpinnerOverlay ? DOMElements.loadingSpinnerOverlay.classList.contains('active') : false;
+        setControlsDisabled('overlay', isOverlayCurrentlyBusy);
+    }
+    function showOverlayControls() {
+        const show = !!currentOverlaySettings.imageData;
+        if(DOMElements.overlayControls) DOMElements.overlayControls.style.display = show ? 'block' : 'none';
+        if(DOMElements.overlayIconToolbar) DOMElements.overlayIconToolbar.style.display = show ? 'flex' : 'none';
+    }
+    async function sendMessageToOverlayContentScript(action, data = {}) {
+        setControlsDisabled('overlay', true); // Indicate busy
+        try {
+            console.log("[POPUP DEBUG] Sending overlay message to background:", { source: 'toolkit-popup-overlay', action, ...data });
+            const response = await chrome.runtime.sendMessage({ source: 'toolkit-popup-overlay', action, ...data });
+            console.log("[POPUP DEBUG] Response from background/content for overlay:", response);
+            if (response && response.error) showStatus("Overlay Error: " + response.error, true, true);
+            else if (response && response.status) showStatus("Overlay: " + response.status, false, true);
+        } catch (e) { showStatus(e.message || "Error controlling overlay.", true, true); }
+        finally { setControlsDisabled('overlay', false); updateOverlayControlsUI(); }
     }
 
-   // Re-introduce getActiveValidTab for robustness
-   function getActiveValidTab(onSuccess, onError) {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          let errorMsg = null; let currentTab = null; let tabUrl = null;
-          if (chrome.runtime.lastError) { errorMsg = `Query Tab Error: ${chrome.runtime.lastError.message}`; }
-          else if (!tabs || tabs.length === 0) { errorMsg = 'No active tab found.'; }
-          else {
-              currentTab = tabs[0]; logTabDetails('getActiveValidTab', currentTab);
-              if (!currentTab || typeof currentTab.url !== 'string' || currentTab.url === '') { errorMsg = 'Cannot get URL from the current tab.'; }
-              else if (!isValidUrl(currentTab.url)) { errorMsg = 'Current tab is not a valid HTTP/HTTPS URL.'; }
-              else if (currentTab.status !== 'complete') { errorMsg = (currentTab.status === 'loading') ? 'Tab is still loading. Please wait.' : `Tab status is not complete (${currentTab.status}).`; }
-              else if (!currentTab.id) { errorMsg = 'Could not get tab ID.'; }
-              else { try { tabUrl = new URL(currentTab.url); } catch (e) { errorMsg = `Error parsing validated URL: ${e.message}`; } }
-          }
-          if (errorMsg) { onError(errorMsg); setControlsDisabled(false); } // Re-enable on error
-          else if (currentTab && tabUrl) { onSuccess(currentTab, tabUrl); } // Success
-          else { onError("Unexpected error validating tab."); setControlsDisabled(false); } // Re-enable on error
-      });
-   }
-
-
-  // --- Event Listeners (Re-integrate robustness) ---
-
-  // Add Parameter Button Click
-  if (addParamButton) {
-    addParamButton.addEventListener('click', () => {
-        if (isOperating) return;
-        // ... (Input validation logic same as previous spinner version) ...
-        const paramNameSelectedValue = paramNameSelect.value;
-        const paramNameCustomValue = paramNameCustom.value.trim();
-        const paramValue = paramValueInput.value.trim();
-        let paramNameToUse = paramNameCustomValue || paramNameSelectedValue;
-        if (!paramNameToUse) { showStatus('Parameter name is required.', true); paramNameCustom.focus(); return; }
-        if (!paramValue) { showStatus('Parameter value is required.', true); paramValueInput.focus(); return; }
-        if (paramNameCustomValue && /[&=?#]/.test(paramNameCustomValue)) { showStatus('Warning: Custom parameter name contains special chars.', true); }
-
-        setControlsDisabled(true); // Show spinner
-
-        getActiveValidTab(
-            (tab, urlObject) => { // onSuccess Validation
+    if (DOMElements.imageUpload) DOMElements.imageUpload.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                currentOverlaySettings.imageData = e.target.result; currentOverlaySettings.visible = true;
+                currentOverlaySettings.scale = 1; currentOverlaySettings.x = 0; currentOverlaySettings.y = 0; currentOverlaySettings.opacity = 1; currentOverlaySettings.locked = false;
+                const settingsToSave = { x:currentOverlaySettings.x, y:currentOverlaySettings.y, opacity:currentOverlaySettings.opacity, visible:currentOverlaySettings.visible, scale:currentOverlaySettings.scale, locked:currentOverlaySettings.locked };
                 try {
-                    // ... (Logic to split names/values, encode, set params, save suggestion - same as spinner version) ...
-                    const names = paramNameToUse.split(',').map(s => s.trim()).filter(Boolean);
-                    const values = paramValue.split(',').map(s => s.trim()).filter(Boolean);
-                    if (names.length === 0 || values.length === 0) { showStatus('No valid names or values provided.', true); setControlsDisabled(false); return; }
-                    const pairsToAdd = Math.min(names.length, values.length); let paramsAddedCount = 0;
-                    for(let i = 0; i < pairsToAdd; i++) {
-                        const name = names[i]; const encodedValue = encodeURIComponent(values[i]);
-                        urlObject.searchParams.set(name, encodedValue); saveSuggestion(name, values[i]); paramsAddedCount++;
-                    }
-                    if (paramsAddedCount > 0) {
-                        chrome.tabs.update(tab.id, { url: urlObject.toString() }, () => {
-                            if (chrome.runtime.lastError) { showStatus(`Error updating tab: ${chrome.runtime.lastError.message}`, true); }
-                            else { showStatus(`Added ${paramsAddedCount} parameter(s).`, false); paramNameCustom.value = ''; paramValueInput.value = ''; paramNameSelect.value = ''; }
-                            setControlsDisabled(false); // Hide spinner after update attempt
-                        });
-                    } else { showStatus('No valid parameter pairs found.', true); setControlsDisabled(false); } // Hide spinner
-                } catch (error) { showStatus(`Error processing parameters: ${error.message}`, true); setControlsDisabled(false); } // Hide spinner
-            },
-            (errorMsg) => { showStatus(errorMsg, true); /* getActiveValidTab hides spinner */ }
-        );
+                    await chrome.storage.local.set({ [STORAGE_KEYS.overlayImage]: currentOverlaySettings.imageData, [STORAGE_KEYS.overlaySettings]: settingsToSave });
+                    updateOverlayControlsUI(); showOverlayControls();
+                    sendMessageToOverlayContentScript('create', { imageData: currentOverlaySettings.imageData, settings: settingsToSave });
+                } catch (storageError) { console.error("Error saving overlay data:", storageError); showStatus("Failed to save overlay image.", true, true); }
+            };
+            reader.onerror = () => { console.error("FileReader error."); showStatus("Error reading image file.", true, true); };
+            reader.readAsDataURL(file);
+        } else if (file) { showStatus("Please select valid image (PNG, JPG, etc).", true, true); DOMElements.imageUpload.value = ''; }
     });
-  }
 
-  // Clear Parameters Button Click
-  if (clearParamsButton) {
-     clearParamsButton.addEventListener('click', () => {
-         if (isOperating) return;
-         setControlsDisabled(true); // Show spinner
-         getActiveValidTab(
-             (tab, urlObject) => { // onSuccess Validation
-                 try {
-                    // ... (Logic to clear params - same as spinner version) ...
-                    if (urlObject.search === '') { showStatus('No parameters to clear.', false); setControlsDisabled(false); return; }
-                    urlObject.search = '';
-                    chrome.tabs.update(tab.id, { url: urlObject.toString() }, () => {
-                        if (chrome.runtime.lastError) { showStatus(`Error clearing params: ${chrome.runtime.lastError.message}`, true); }
-                        else { showStatus('Parameters cleared.', false); }
-                        setControlsDisabled(false); // Hide spinner after update attempt
-                    });
-                 } catch (error) { showStatus(`Error preparing to clear params: ${error.message}`, true); setControlsDisabled(false); } // Hide spinner
-             },
-             (errorMsg) => { showStatus(errorMsg, true); /* getActiveValidTab hides spinner */ }
-         );
-     });
-  }
+    function handleOverlaySettingChange(key, value) {
+        if (currentOverlaySettings.locked && !['visible', 'locked'].includes(key)) { showStatus("Controls are locked! Unlock to make changes.", true, true); updateOverlayControlsUI(); return; }
+        currentOverlaySettings[key] = value;
+        const settingsToSave = { x:currentOverlaySettings.x, y:currentOverlaySettings.y, opacity:currentOverlaySettings.opacity, visible:currentOverlaySettings.visible, scale:currentOverlaySettings.scale, locked:currentOverlaySettings.locked };
+        console.log("[POPUP DEBUG] handleOverlaySettingChange. Key:", key, "Value:", value, "currentSettings:", JSON.stringify(currentOverlaySettings).substring(0,100)+"...");
+        chrome.storage.local.set({ [STORAGE_KEYS.overlaySettings]: settingsToSave });
+        sendMessageToOverlayContentScript('update', { settings: settingsToSave });
+        updateOverlayControlsUI();
+    }
 
-  // Environment Select Change (Robust version)
-  if (envSelect) {
-    envSelect.addEventListener('change', (e) => {
-        if (isOperating) { // Prevent overlapping operations
-             console.warn("Operation in progress, ignoring env change.");
-             // Find the previously selected option (might need state) and reset? Difficult. Better to rely on disabling.
-             return;
-         }
-      const selectedEnv = e.target.value; // The key like 'dev_nextcar'
-      if (!selectedEnv) { return; } // Ignore placeholder selection
-
-      // Save preference (async, no need to wait)
-      chrome.storage.sync.set({ environment: selectedEnv }, () => {
-        if (chrome.runtime.lastError) {
-            console.error("Error saving env preference:", chrome.runtime.lastError.message);
-            // Maybe show a non-critical status?
-        } else { console.log("Env preference saved:", selectedEnv); }
-      });
-
-      setControlsDisabled(true); // Show spinner
-
-      getActiveValidTab(
-          (tab, urlObject) => { // onSuccess Validation
-              try {
-                  const newHost = getHostForEnv(selectedEnv);
-                  if (!newHost) { // Check if the key was valid in our map
-                      showStatus(`Unknown environment key: ${selectedEnv}`, true);
-                      setControlsDisabled(false); return;
-                  }
-
-                  // Check if already on the target host
-                  if (urlObject.hostname.toLowerCase() === newHost.toLowerCase()) {
-                       showStatus(`Already on ${selectedEnv.split('_')[0]} (${newHost}).`, false); // Show simpler name
-                       setControlsDisabled(false); return;
-                  }
-
-                  urlObject.hostname = newHost;
-                  chrome.tabs.update(tab.id, { url: urlObject.toString() }, () => {
-                      if (chrome.runtime.lastError) {
-                          showStatus(`Error switching environment: ${chrome.runtime.lastError.message}`, true);
-                           setControlsDisabled(false); // Hide spinner on error
-                      } else {
-                           console.log(`Switched to ${selectedEnv}. Closing popup.`);
-                           window.close(); // Close popup on success
-                           // No need to hide spinner as popup closes
-                      }
-                  });
-              } catch (error) {
-                  showStatus(`Error preparing to switch env: ${error.message}`, true);
-                  setControlsDisabled(false); // Hide spinner on error
-              }
-          },
-          (errorMsg) => { // onError Validation
-              showStatus(errorMsg, true);
-              // getActiveValidTab handles hiding spinner on validation error
-          }
-      );
+    if(DOMElements.overlayPosX) DOMElements.overlayPosX.addEventListener('input',()=>handleOverlaySettingChange('x',parseInt(DOMElements.overlayPosX.value)||0));
+    if(DOMElements.overlayPosY) DOMElements.overlayPosY.addEventListener('input',()=>handleOverlaySettingChange('y',parseInt(DOMElements.overlayPosY.value)||0));
+    if(DOMElements.overlayOpacity) DOMElements.overlayOpacity.addEventListener('input',()=>{ const opac=parseInt(DOMElements.overlayOpacity.value)/100; if(DOMElements.overlayOpacityValue) DOMElements.overlayOpacityValue.textContent=DOMElements.overlayOpacity.value; handleOverlaySettingChange('opacity',opac); });
+    if (DOMElements.overlayScaleInput) DOMElements.overlayScaleInput.addEventListener('input', () => {
+        let newScale = parseFloat(DOMElements.overlayScaleInput.value); console.log("[POPUP DEBUG] Scale input changed. Raw:", DOMElements.overlayScaleInput.value, "Parsed:", newScale);
+        if (isNaN(newScale) || newScale <= 0) { console.warn("[POPUP DEBUG] Invalid scale input:", DOMElements.overlayScaleInput.value); newScale = Math.max(parseFloat(DOMElements.overlayScaleInput.min) || 0.1, currentOverlaySettings.scale); DOMElements.overlayScaleInput.value = newScale.toFixed(2); }
+        const minScale = parseFloat(DOMElements.overlayScaleInput.min) || 0.1; const maxScale = parseFloat(DOMElements.overlayScaleInput.max) || 5;
+        newScale = Math.max(minScale, Math.min(maxScale, newScale)); if (newScale.toFixed(2) !== parseFloat(DOMElements.overlayScaleInput.value).toFixed(2)) { DOMElements.overlayScaleInput.value = newScale.toFixed(2); }
+        handleOverlaySettingChange('scale', newScale);
     });
-  }
-
-  // Value Suggestions Click Handler (Event Delegation)
-  if (valueSuggestionsDiv) {
-    valueSuggestionsDiv.addEventListener('click', (e) => {
-        // ... (same as before) ...
-         if (e.target && e.target.classList.contains('value-suggestion')) {
-          const value = e.target.dataset.value;
-          if (value !== undefined && paramValueInput) { paramValueInput.value = value; paramValueInput.focus(); }
-        }
+    if(DOMElements.iconToggleVisibility) DOMElements.iconToggleVisibility.addEventListener('click',()=>handleOverlaySettingChange('visible',!currentOverlaySettings.visible));
+    if(DOMElements.iconToggleLock) DOMElements.iconToggleLock.addEventListener('click',()=>handleOverlaySettingChange('locked',!currentOverlaySettings.locked));
+    if(DOMElements.resetOverlayButton) DOMElements.resetOverlayButton.addEventListener('click', async ()=>{
+        try {
+            await chrome.storage.local.remove([STORAGE_KEYS.overlayImage,STORAGE_KEYS.overlaySettings]);
+            currentOverlaySettings = {x:0,y:0,opacity:1,scale:1,visible:false,locked:false,imageData:null}; if(DOMElements.imageUpload) DOMElements.imageUpload.value = '';
+            updateOverlayControlsUI(); showOverlayControls(); sendMessageToOverlayContentScript('remove'); showStatus("Overlay removed.", false, true);
+        } catch(e){ showStatus(e.message||"Failed to reset overlay.",true,true); }
     });
-  }
 
+    async function loadInitialOverlayState() {
+        if(!DOMElements.overlayControls && !DOMElements.overlayIconToolbar) return;
+        try {
+            const result = await chrome.storage.local.get([STORAGE_KEYS.overlayImage,STORAGE_KEYS.overlaySettings]);
+            if(result[STORAGE_KEYS.overlayImage] && result[STORAGE_KEYS.overlaySettings]){
+                currentOverlaySettings.imageData = result[STORAGE_KEYS.overlayImage]; const s = result[STORAGE_KEYS.overlaySettings];
+                currentOverlaySettings.x = s.x||0; currentOverlaySettings.y = s.y||0;
+                currentOverlaySettings.opacity = s.opacity !== undefined ? s.opacity : 1;
+                currentOverlaySettings.visible = s.visible !== undefined ? s.visible : true;
+                currentOverlaySettings.scale = s.scale !== undefined ? parseFloat(s.scale) : 1;
+                currentOverlaySettings.locked = s.locked !== undefined ? s.locked : false;
+                console.log("[POPUP DEBUG] loadInitialOverlayState - Loaded settings:", currentOverlaySettings);
+            }
+            // updateOverlayControlsUI and showOverlayControls are called AFTER settings are loaded
+            // and will use the loaded currentOverlaySettings.locked state.
+            updateOverlayControlsUI();
+            showOverlayControls();
+        } catch (e) { console.error("Error loading overlay state:", e); showStatus(e.message||"Error loading overlay state.",true,true); }
+    }
 
-  // --- Initialization ---
-  function initializePopup() {
-    // Need to get tab info first to filter dropdown
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        let currentUrl = null;
-        let tabHostname = null;
-        let platformKey = null;
-        let isInitialTabValid = false;
+    async function initializeApp() {
+        // Set URL tools to busy initially, overlay controls' initial disabled state will be
+        // handled by updateOverlayControlsUI after its state is loaded.
+        setControlsDisabled('urlTools', true);
+        if (DOMElements.imageUpload) DOMElements.imageUpload.disabled = true; // Disable initially until state is known
 
-        // 1. Validate the initial tab
-        if (tabs && tabs.length > 0 && isValidUrl(tabs[0].url)) {
-             try {
-                 currentUrl = new URL(tabs[0].url);
-                 tabHostname = currentUrl.hostname;
-                 platformKey = detectPlatform(tabHostname); // Use tab's hostname
-                 isInitialTabValid = true;
-             } catch (e) { console.error("Error parsing initial URL:", e); }
+        let isInitialTabValidForUrlTools = false; let platformForEnvSelect = null;
+        try {
+            const { tab, urlObject } = await getActiveValidTab();
+            isInitialTabValidForUrlTools = true; platformForEnvSelect = detectPlatform(urlObject.hostname);
+        } catch (e) { /* getActiveValidTab shows status */ }
+        await updateParamNameDropdown(); await renderValueSuggestions();
+        if (isInitialTabValidForUrlTools) {
+            setControlsDisabled('urlTools', false);
+            if (DOMElements.envSelect) { /* ... (same env select init logic) ... */
+                DOMElements.envSelect.value = ""; let firstVisibleOpt = null;
+                Array.from(DOMElements.envSelect.options).forEach(opt => { const matches = platformForEnvSelect && opt.value && opt.value.endsWith(`_${platformForEnvSelect}`); const isPlaceholder = opt.value === ""; opt.hidden = !isPlaceholder && !matches && platformForEnvSelect; if(matches && !firstVisibleOpt) firstVisibleOpt = opt; });
+                const store = await chrome.storage.sync.get(STORAGE_KEYS.environment); const savedEnv = store[STORAGE_KEYS.environment]; const savedOptNode = savedEnv ? DOMElements.envSelect.querySelector(`option[value="${savedEnv}"]`) : null;
+                if(savedOptNode && !savedOptNode.hidden) DOMElements.envSelect.value = savedEnv;
+                else if (firstVisibleOpt) DOMElements.envSelect.value = firstVisibleOpt.value;
+                else if (savedOptNode) { Array.from(DOMElements.envSelect.options).forEach(o => o.hidden = (o.value === "")); DOMElements.envSelect.value = savedEnv; }
+                console.log("[POPUP DEBUG] initializeApp - EnvSelect final value:", DOMElements.envSelect.value);
+            }
+        } else { if (DOMElements.envSelect) { /* ... (same fallback env select init logic) ... */
+            Array.from(DOMElements.envSelect.options).forEach(o => o.hidden = (o.value === "")); const store = await chrome.storage.sync.get(STORAGE_KEYS.environment); const savedEnv = store[STORAGE_KEYS.environment];
+            if (savedEnv && DOMElements.envSelect.querySelector(`option[value="${savedEnv}"]`)) DOMElements.envSelect.value = savedEnv; else DOMElements.envSelect.value = ""; console.log("[POPUP DEBUG] initializeApp (invalid tab) - EnvSelect final value:", DOMElements.envSelect.value); }
         }
 
-        // 2. Filter dropdown based on platform (if applicable)
-        if (envSelect && platformKey) {
-             console.log(`Detected platform: ${platformKey} from host: ${tabHostname}`);
-             let firstVisibleOption = null;
-             Array.from(envSelect.options).forEach(option => {
-                // Hide if value is empty OR doesn't end with the platform key
-                if (!option.value || !option.value.endsWith(`_${platformKey}`)) {
-                    option.hidden = true;
-                } else {
-                    option.hidden = false;
-                    if (!firstVisibleOption) {
-                        firstVisibleOption = option; // Track the first one we make visible
-                    }
-                }
-             });
-             // Automatically select the first *visible* option in the filtered list
-             if (firstVisibleOption) {
-                 envSelect.value = firstVisibleOption.value;
-                 console.log(`Set initial env select to first visible: ${firstVisibleOption.value}`);
-             } else {
-                  console.log(`No options visible for platform ${platformKey}.`);
-                  // Maybe select the placeholder or leave as is?
-                  envSelect.value = ""; // Select placeholder if nothing matches
-             }
-        } else if (envSelect) {
-             // No platform detected or no envSelect, make all non-empty options visible
-             console.log("No specific platform detected or envSelect missing, showing all.");
-             Array.from(envSelect.options).forEach(option => {
-                 option.hidden = !option.value; // Hide only the placeholder
-             });
-             envSelect.value = ""; // Default to placeholder
+        await loadSfmcUnwrapperState();
+        await loadInitialOverlayState(); // This calls updateOverlayControlsUI which will set overlay controls disabled state
+
+        if (DOMElements.imageUpload && !currentOverlaySettings.imageData) { // If no image is loaded, image upload should be enabled (unless busy)
+            DOMElements.imageUpload.disabled = false;
+        } else if (DOMElements.imageUpload && currentOverlaySettings.imageData && currentOverlaySettings.locked) {
+             DOMElements.imageUpload.disabled = true;
+        } else if (DOMElements.imageUpload) {
+            DOMElements.imageUpload.disabled = false;
         }
 
-        // 3. Handle controls disabling/enabling based on tab validity
-        if (!isInitialTabValid) {
-            showStatus("Extension only works on HTTP/HTTPS tabs.", false);
-            setControlsDisabled(true); // Disable controls
-        } else {
-            setControlsDisabled(false); // Ensure controls are enabled
 
-            // 4. Try to load and apply saved environment preference *after* filtering
-            // This might override the auto-selection based on platform if the saved pref is still visible
-            chrome.storage.sync.get('environment', ({ environment }) => {
-                 if (chrome.runtime.lastError) { console.error("Error getting saved env:", chrome.runtime.lastError.message); }
-                 else if (environment && envSelect) {
-                     const optionToSelect = envSelect.querySelector(`option[value="${environment}"]`);
-                     // Only select saved pref if it's *visible* after filtering
-                     if (optionToSelect && !optionToSelect.hidden) {
-                         envSelect.value = environment;
-                         console.log(`Set env dropdown to saved pref (visible): ${environment}`);
-                     } else if (optionToSelect) {
-                          console.log(`Saved pref '${environment}' is hidden for current platform, ignoring.`);
-                     } else {
-                         console.warn(`Saved env pref '${environment}' not in options at all.`);
-                     }
-                 }
-            });
-        }
-
-        // 5. Load suggestions (can happen regardless of tab validity)
-        updateParamNameDropdown();
-        showValueSuggestions();
-        console.log("Popup initialized at", new Date().toLocaleTimeString());
+        console.log("Toolkit Pro Popup initialized.");
+    }
+    initializeApp().catch(err => {
+        console.error("App init failed:", err); showStatus(err.message || "Popup init failed badly.", true);
+        setControlsDisabled('urlTools', false); setControlsDisabled('overlay', false);
     });
-  }
-
-  initializePopup();
-
-}); // End DOMContentLoaded
+});

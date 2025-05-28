@@ -1,19 +1,30 @@
 {
-    "manifest_version": 3,
-    "name": "URL Modifier",
-    "version": "1.0",
-    "description": "Modifies URLs with parameters and environments",
-    "permissions": [
-      "activeTab",
-      "storage",
-      "activeTab"
-    ],
-    "action": {
-      "default_popup": "popup.html",
-      "default_icon": {
-        "16": "icon.png",
-        "48": "icon.png",
-        "128": "icon.png"
-      }
+  "manifest_version": 3,
+  "name": "URL Modifier & Unwrapper (MV3)",
+ "version": "5.2",
+  "description": "Advanced tools: URL modification, SFMC unwrapping, and Pixel Perfect image overlay with toolbar.",
+  "permissions": [
+    "storage",
+    "tabs",
+    "webRequest",
+    "activeTab",
+    "scripting"                  
+  ],
+  "host_permissions": [
+    "<all_urls>",
+    "*://user-content.s4.sfmc-content.com/*",
+    "*://*.rapp.com/*"
+  ],
+  "action": { 
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icon_128.png"
     }
+  },
+  "background": {
+    "service_worker": "background.js" 
+  },
+  "icons": {
+    "128": "icon_128.png"
   }
+}
