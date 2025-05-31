@@ -11,7 +11,7 @@
     }
     input[type="file"] { padding: 5px; }
     input[type="range"] { padding: 0; margin-top: 2px; margin-bottom: 5px;}
-    button { cursor: pointer; background-color: #007bff; color: white; border: none; font-weight: 500; transition: background-color 0.2s ease; }
+    button { cursor: pointer; background-color: #007bff; color: white; border: none; font-weight: 500; transition: background-color 0.2s ease; padding: 9px 10px; border-radius: 4px;}
     button:hover { background-color: #0056b3; }
     button:disabled { background-color: #e9ecef; color: #6c757d; cursor: not-allowed;}
     hr { margin: 20px -10px; border: 0; border-top: 1px solid #e0e0e0; }
@@ -27,13 +27,13 @@
     #toggleSfmcUnwrapper.enabled { background-color: #28a745; } #toggleSfmcUnwrapper.disabled { background-color: #6c757d; }
     #overlayControls { margin-top: 10px; } #overlayControls .coords { display: flex; gap: 8px; }
     #overlayControls .coords input { flex-grow: 1; }
-    #overlayOpacityValue { font-weight: normal; color: #007bff; }
+    #overlayOpacityValue, #overlayScaleValue { font-weight: normal; color: #007bff; }
     #resetOverlay { background-color: #ffc107; color: black; } #resetOverlay:hover { background-color: #e0a800; }
     .spinner { border:3px solid rgba(0,0,0,0.1);width:18px;height:18px;border-radius:50%;border-left-color:#007bff;animation:spin .8s linear infinite;display:none;margin:10px auto}
     .spinner.active{display:block} @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     #overlayIconToolbar { display: flex; justify-content: flex-start; gap: 5px; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
     .icon-button { background-color: #f0f0f0; border: 1px solid #ccc; color: #333; padding: 6px 8px; font-size: 11px; line-height: 1.2; border-radius: 4px; cursor: pointer; min-width: 45px; text-align: center; font-weight: 500; letter-spacing: 0.5px; }
-    .icon-button:hover { background-color: #e0e0e0; border-color: #bbb; }
+    .icon-button:hover:not(:disabled) { background-color: #e0e0e0; border-color: #bbb; }
     .icon-button:disabled { background-color: #f8f9fa; border-color: #e0e0e0; color: #aaa; cursor:not-allowed; }
     .icon-button.active-vis, .icon-button.active-lock { background-color: #007bff; color: white; border-color: #0056b3; }
     .icon-button.inactive-vis, .icon-button.inactive-lock { background-color: #6c757d; color: white; border-color: #5a6268; }
@@ -46,7 +46,7 @@
   <div id="valueSuggestions" class="suggestion-container"><i>Loading suggestions...</i></div> <div id="status"></div> <div id="loadingSpinnerUrlTools" class="spinner"></div>
   <button id="addParam">Add Parameter(s)</button> <button id="clearParams">Clear All Parameters</button>
   <label for="environmentSelect" style="margin-top:15px;">Switch Environment:</label>
-  <select id="environmentSelect">
+  <select id="environmentSelect">  <!-- <<< CRITICAL ID HERE -->
     <option value="">-- Select Environment --</option>
     <option value="dev_nextcar">Next Car - Dev</option> <option value="qa_nextcar">Next Car - QA</option> <option value="prod_nextcar">Next Car - Prod</option> <option value="usync_nextcar">Next Car - Sync</option>
     <option value="dev_newcar">New Car - Dev</option> <option value="qa_newcar">New Car - QA</option> <option value="prod_newcar">New Car - Prod</option> <option value="usync_newcar">New Car - Sync</option>
@@ -64,7 +64,7 @@
   <div id="overlayControls" style="display:none;">
     <label>Origin (X, Y):</label> <div class="coords"><input type="number" id="overlayPosX" value="0" title="X Position"> <input type="number" id="overlayPosY" value="0" title="Y Position"></div>
     <label for="overlayOpacity">Opacity: <span id="overlayOpacityValue">100</span>%</label> <input type="range" id="overlayOpacity" min="0" max="100" value="100" step="1">
-    <label for="overlayScaleInput">Scale (e.g., 0.5, 1, 1.5):</label> <input type="number" id="overlayScaleInput" value="1" min="0.1" max="5" step="0.05">
+    <label for="overlayScaleInput">Scale (e.g., 0.5, 1, 1.5):</label> <input type="number" id="overlayScaleInput" value="1.00" min="0.1" max="5" step="0.05">
     <div id="loadingSpinnerOverlay" class="spinner"></div>
     <button id="resetOverlay">Remove Overlay Image</button>
   </div> <script src="popup.js"></script>
