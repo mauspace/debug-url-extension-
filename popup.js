@@ -59,9 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const PREDEFINED_PARAMS = {
         names: ['debug', 'rtest', 'forceflush', 'clearcache', 'utm_source', 'utm_medium', 'utm_campaign', 'gclid'],
-        values: ['true', 'params', 'style', 'section', 'info', 'false', '1', 'test', 'email', 'social', 'cpc'],
+        values: ['true', 'params', 'style', 'section', 'info', 'false', '1', 'test'],
     };
-    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 6;
+    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 8;
     let statusClearTimer = null; const STATUS_CLEAR_DELAY_MS = 3500;
 
     // --- TRACE LOG POINT B ---

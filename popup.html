@@ -5,10 +5,11 @@
   <style>
     body { padding: 10px; width: 330px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif; font-size: 14px; color: #333; }
     label { display: block; margin-top: 12px; margin-bottom: 4px; font-weight: 600; font-size: 13px; color: #444;}
-    input[type="text"], input[type="number"], input[type="file"], input[type="range"], select, button {
+    input[type="text"], input[type="number"], input[type="file"], input[type="range"], select, button, textarea {
       width: 100%; margin-bottom: 10px; padding: 9px 10px; box-sizing: border-box;
       border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
     }
+    textarea { font-family: monospace; resize: vertical; }
     input[type="file"] { padding: 5px; }
     input[type="range"] { padding: 0; margin-top: 2px; margin-bottom: 5px;}
     button { cursor: pointer; background-color: #007bff; color: white; border: none; font-weight: 500; transition: background-color 0.2s ease; padding: 9px 10px; border-radius: 4px;}
@@ -20,9 +21,9 @@
     .suggestion-container { margin-top: -5px; margin-bottom: 10px; font-size: 12px; color: #555;}
     .value-suggestion { color: #0069d9; cursor: pointer; text-decoration: none; margin-right: 6px; padding: 2px 4px; border-radius: 3px; background-color: #f0f0f0; display: inline-block; margin-bottom: 3px; }
     .value-suggestion:hover { color: #004085; background-color: #e0e0e0; text-decoration: underline;}
-    #status { margin-top: 10px; min-height: 1.2em; font-size: 13px; font-weight: 500; padding: 8px; border-radius: 4px; text-align: center; }
-    #status.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
-    #status.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
+    #status, #htmlCheckerResult { margin-top: 10px; min-height: 1.2em; font-size: 13px; font-weight: 500; padding: 8px; border-radius: 4px; text-align: center; }
+    #status.error, #htmlCheckerResult.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
+    #status.success, #htmlCheckerResult.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
     #status.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;}
     #toggleSfmcUnwrapper.enabled { background-color: #28a745; } #toggleSfmcUnwrapper.disabled { background-color: #6c757d; }
     #overlayControls { margin-top: 10px; } #overlayControls .coords { display: flex; gap: 8px; }
@@ -55,6 +56,16 @@
     <option value="dev_retail">Retail - Dev</option> <option value="qa_retail">Retail - QA</option> <option value="prod_retail">Retail - Prod</option> <option value="usync_retail">Retail - Sync</option>
   </select>
   <button id="toggleSfmcUnwrapper" style="margin-top: 15px;">Toggle SFMC Unwrapper</button> <hr>
+  
+  <!-- === NEW FEATURE: HTML TAG CHECKER === -->
+  <h3>HTML Tag Checker</h3>
+  <label for="htmlCheckerTextarea">Paste Email HTML Code Here:</label>
+  <textarea id="htmlCheckerTextarea" rows="8" placeholder="e.g., <table><tr><td>...</td></tr></table>"></textarea>
+  <div id="htmlCheckerResult"></div>
+  <button id="checkHtmlButton">Check HTML Tags</button>
+  <!-- === END OF NEW FEATURE === -->
+  
+  <hr>
   <h3>Pixel Perfect Overlay</h3>
   <div id="overlayIconToolbar" style="display:none;">
     <button id="iconToggleVisibility" class="icon-button" title="Toggle Overlay Visibility">VIS</button>
