@@ -38,16 +38,24 @@
     .icon-button:disabled { background-color: #f8f9fa; border-color: #e0e0e0; color: #aaa; cursor:not-allowed; }
     .icon-button.active-vis, .icon-button.active-lock { background-color: #007bff; color: white; border-color: #0056b3; }
     .icon-button.inactive-vis, .icon-button.inactive-lock { background-color: #6c757d; color: white; border-color: #5a6268; }
+    .main-tools { display: flex; gap: 10px; margin-bottom: 15px; }
+    .main-tools button { flex: 1; }
   </style>
 </head>
 <body>
+  <h3>Page Tools</h3>
+  <div class="main-tools">
+    <button id="rulerModeButton" title="Toggle an on-page measuring tool (Press Esc on page to exit)">Ruler Mode</button>
+  </div>
+  <hr>
+
   <h3>URL Tools</h3>
   <label for="paramNameSelect">Parameter Name:</label> <input type="text" id="paramNameCustom" placeholder="Or type custom name"> <select id="paramNameSelect"><option value="">-- Select or type custom --</option></select>
   <label for="paramValue">Parameter Value:</label> <input type="text" id="paramValue" placeholder="Parameter value">
   <div id="valueSuggestions" class="suggestion-container"><i>Loading suggestions...</i></div> <div id="status"></div> <div id="loadingSpinnerUrlTools" class="spinner"></div>
   <button id="addParam">Add Parameter(s)</button> <button id="clearParams">Clear All Parameters</button>
   <label for="environmentSelect" style="margin-top:15px;">Switch Environment:</label>
-  <select id="environmentSelect">  <!-- <<< CRITICAL ID HERE -->
+  <select id="environmentSelect">
     <option value="">-- Select Environment --</option>
     <option value="dev_nextcar">Next Car - Dev</option> <option value="qa_nextcar">Next Car - QA</option> <option value="prod_nextcar">Next Car - Prod</option> <option value="usync_nextcar">Next Car - Sync</option>
     <option value="dev_newcar">New Car - Dev</option> <option value="qa_newcar">New Car - QA</option> <option value="prod_newcar">New Car - Prod</option> <option value="usync_newcar">New Car - Sync</option>
@@ -57,13 +65,11 @@
   </select>
   <button id="toggleSfmcUnwrapper" style="margin-top: 15px;">Toggle SFMC Unwrapper</button> <hr>
   
-  <!-- === NEW FEATURE: HTML TAG CHECKER === -->
   <h3>HTML Tag Checker</h3>
   <label for="htmlCheckerTextarea">Paste Email HTML Code Here:</label>
   <textarea id="htmlCheckerTextarea" rows="8" placeholder="e.g., <table><tr><td>...</td></tr></table>"></textarea>
   <div id="htmlCheckerResult"></div>
   <button id="checkHtmlButton">Check HTML Tags</button>
-  <!-- === END OF NEW FEATURE === -->
   
   <hr>
   <h3>Pixel Perfect Overlay</h3>

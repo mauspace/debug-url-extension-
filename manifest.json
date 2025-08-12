@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
-  "name": "URL Modifier & Unwrapper (MV3)",
- "version": "5.2",
-  "description": "Advanced tools: URL modification, SFMC unwrapping, and Pixel Perfect image overlay with toolbar.",
+  "name": "Web Dev Toolkit Pro",
+  "version": "5.3",
+  "description": "Advanced tools: URL modification, SFMC unwrapping, Pixel Perfect image overlay, and an on-page Ruler.",
   "permissions": [
     "storage",
     "tabs",
     "webRequest",
     "activeTab",
-    "scripting"                  
+    "scripting"
   ],
   "host_permissions": [
     "<all_urls>",
