@@ -13,15 +13,18 @@
     input[type="file"] { padding: 5px; }
     input[type="range"] { padding: 0; margin-top: 2px; margin-bottom: 5px;}
     button { cursor: pointer; background-color: #007bff; color: white; border: none; font-weight: 500; transition: background-color 0.2s ease; padding: 9px 10px; border-radius: 4px;}
-    button:hover { background-color: #0056b3; }
+    button:hover:not(:disabled) { background-color: #0056b3; }
     button:disabled { background-color: #e9ecef; color: #6c757d; cursor: not-allowed;}
     hr { margin: 20px -10px; border: 0; border-top: 1px solid #e0e0e0; }
     h3 { margin-top: 0; margin-bottom: 15px; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px; font-size: 16px; color: #007bff; font-weight: 600; }
-    #clearParams { background-color: #dc3545; } #clearParams:hover { background-color: #c82333; }
+    .main-tools { display: flex; gap: 10px; margin-bottom: 15px; }
+    .main-tools button { flex: 1; }
+    #clearParams { background-color: #dc3545; } #clearParams:hover:not(:disabled) { background-color: #c82333; }
     .suggestion-container { margin-top: -5px; margin-bottom: 10px; font-size: 12px; color: #555;}
     .value-suggestion { color: #0069d9; cursor: pointer; text-decoration: none; margin-right: 6px; padding: 2px 4px; border-radius: 3px; background-color: #f0f0f0; display: inline-block; margin-bottom: 3px; }
     .value-suggestion:hover { color: #004085; background-color: #e0e0e0; text-decoration: underline;}
-    #status, #htmlCheckerResult { margin-top: 10px; min-height: 1.2em; font-size: 13px; font-weight: 500; padding: 8px; border-radius: 4px; text-align: center; }
+    #status, #htmlCheckerResult { margin-top: 10px; min-height: 1.2em; font-size: 13px; font-weight: 500; padding: 8px; border-radius: 4px; text-align: center; word-wrap: break-word; }
+    #status:empty, #htmlCheckerResult:empty { display: none; }
     #status.error, #htmlCheckerResult.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;}
     #status.success, #htmlCheckerResult.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb;}
     #status.info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb;}
@@ -29,7 +32,7 @@
     #overlayControls { margin-top: 10px; } #overlayControls .coords { display: flex; gap: 8px; }
     #overlayControls .coords input { flex-grow: 1; }
     #overlayOpacityValue, #overlayScaleValue { font-weight: normal; color: #007bff; }
-    #resetOverlay { background-color: #ffc107; color: black; } #resetOverlay:hover { background-color: #e0a800; }
+    #resetOverlay { background-color: #ffc107; color: black; } #resetOverlay:hover:not(:disabled) { background-color: #e0a800; }
     .spinner { border:3px solid rgba(0,0,0,0.1);width:18px;height:18px;border-radius:50%;border-left-color:#007bff;animation:spin .8s linear infinite;display:none;margin:10px auto}
     .spinner.active{display:block} @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
     #overlayIconToolbar { display: flex; justify-content: flex-start; gap: 5px; margin-bottom: 15px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
@@ -38,8 +41,6 @@
     .icon-button:disabled { background-color: #f8f9fa; border-color: #e0e0e0; color: #aaa; cursor:not-allowed; }
     .icon-button.active-vis, .icon-button.active-lock { background-color: #007bff; color: white; border-color: #0056b3; }
     .icon-button.inactive-vis, .icon-button.inactive-lock { background-color: #6c757d; color: white; border-color: #5a6268; }
-    .main-tools { display: flex; gap: 10px; margin-bottom: 15px; }
-    .main-tools button { flex: 1; }
   </style>
 </head>
 <body>
@@ -76,6 +77,7 @@
   <div id="overlayIconToolbar" style="display:none;">
     <button id="iconToggleVisibility" class="icon-button" title="Toggle Overlay Visibility">VIS</button>
     <button id="iconToggleLock" class="icon-button" title="Lock/Unlock Overlay Controls">LOCK</button>
+    <button id="iconRulerMode" class="icon-button" title="Toggle Ruler Mode">RULER</button>
   </div>
   <label for="imageUpload">Upload Design Image:</label> <input type="file" id="imageUpload" accept="image/png, image/jpeg, image/gif, image/webp, image/svg+xml">
   <div id="overlayControls" style="display:none;">
