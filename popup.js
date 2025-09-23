@@ -12,7 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
         overlayIconToolbar: 'overlayIconToolbar', iconToggleVisibility: 'iconToggleVisibility', iconToggleLock: 'iconToggleLock',
         overlayPosX: 'overlayPosX', overlayPosY: 'overlayPosY', overlayOpacity: 'overlayOpacity',
         overlayOpacityValue: 'overlayOpacityValue', overlayScaleInput: 'overlayScaleInput',
-        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay'
+        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay',
+          multiViewButton: 'multiViewButton', // <-- ADD THIS
     };
     const STORAGE_KEYS = {
         paramNames: 'paramNames', paramValues: 'paramValues', environment: 'environment',
@@ -262,6 +263,54 @@ document.addEventListener('DOMContentLoaded', () => {
         if (DOMElements.iconToggleVisibility) DOMElements.iconToggleVisibility.addEventListener("click", () => handleOverlaySettingChange("visible", !currentOverlaySettings.visible));
         if (DOMElements.iconToggleLock) DOMElements.iconToggleLock.addEventListener("click", () => handleOverlaySettingChange("locked", !currentOverlaySettings.locked));
         if (DOMElements.resetOverlayButton) DOMElements.resetOverlayButton.addEventListener("click", async () => { try { await chrome.storage.local.remove([STORAGE_KEYS.overlayImage, STORAGE_KEYS.overlaySettings]), currentOverlaySettings = { x: 0, y: 0, opacity: 1, scale: 1, visible: false, locked: false, imageData: null }, DOMElements.imageUpload && (DOMElements.imageUpload.value = ""), updateOverlayControlsUI(), showOverlayControls(), sendMessageToContentScript("remove"), showStatus("Overlay removed.", false) } catch (e) { showStatus(e.message || "Failed to reset overlay.", true) } });
+
+        // --- Add this new event listener inside initializeApp() with the others ---
+if (DOMElements.multiViewButton) {
+    DOMElements.multiViewButton.addEventListener('click', async () => {
+        console.log("Multi-View button clicked.");
+        try {
+            const { tab, urlObject } = await getActiveValidTab(); // Get current tab info
+            const platform = detectPlatform(urlObject.hostname);
+
+            if (!platform) {
+                showStatus("Cannot determine platform for Multi-View.", true);
+                return;
+            }
+
+            const devHost = getHostForEnv(`dev_${platform}`);
+            const qaHost = getHostForEnv(`qa_${platform}`);
+            const prodHost = getHostForEnv(`prod_${platform}`);
+
+            if (!devHost || !qaHost || !prodHost) {
+                showStatus("Missing one or more environment hosts (dev, qa, prod) for this platform.", true);
+                return;
+            }
+
+            // Create the URLs for the iframes
+            const devUrl = new URL(urlObject);
+            devUrl.hostname = devHost;
+            const qaUrl = new URL(urlObject);
+            qaUrl.hostname = qaHost;
+            const prodUrl = new URL(urlObject);
+            prodUrl.hostname = prodHost;
+
+            // Send a message to the background script to execute the multi-view logic
+            await chrome.runtime.sendMessage({
+                action: 'activateMultiView',
+                urls: {
+                    dev: devUrl.toString(),
+                    qa: qaUrl.toString(),
+                    prod: prodUrl.toString()
+                }
+            });
+            window.close(); // Close the popup
+
+        } catch (error) {
+            console.error("Multi-View setup failed:", error);
+            // getActiveValidTab already shows a status message
+        }
+    });
+}
         
         // --- INITIAL UI STATE SETUP ---
         setControlsDisabled('urlTools', true);
