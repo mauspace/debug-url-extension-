@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Web Dev Toolkit Pro",
-  "version": "5.4",
-  "description": "Advanced tools: URL modification, SFMC unwrapping, Pixel Perfect image overlay, and an on-page Ruler.",
+  "version": "5.5",
+  "description": "Advanced tools: URL modification, SFMC unwrapping, Pixel Perfect overlay, Ruler, and Multi-View mode.",
   "permissions": [
     "storage",
     "tabs",
@@ -18,13 +18,17 @@
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-     "128": "icon_128.png"
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
     }
   },
   "background": {
     "service_worker": "background.js"
   },
   "icons": {
-     "128": "icon_128.png"
+    "16": "images/icon16.png",
+    "48": "images/icon48.png",
+    "128": "images/icon128.png"
   }
 }

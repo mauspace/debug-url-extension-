@@ -1,19 +1,18 @@
-// popup.js (Combined Logic - Readable URL Tools & Pixel Overlay with all features)
+// popup.js (Full code with lowercase suggestions and Multi-View integration)
 document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENT IDs & STORAGE KEYS ---
     const EL_IDS = {
         addParamButton: 'addParam', paramNameSelect: 'paramNameSelect', paramNameCustom: 'paramNameCustom',
         paramValue: 'paramValue', clearParamsButton: 'clearParams', environmentSelect: 'environmentSelect',
         valueSuggestions: 'valueSuggestions', status: 'status', loadingSpinnerUrlTools: 'loadingSpinnerUrlTools',
         toggleSfmcUnwrapperButton: 'toggleSfmcUnwrapper',
         htmlCheckerTextarea: 'htmlCheckerTextarea', htmlCheckerResult: 'htmlCheckerResult', checkHtmlButton: 'checkHtmlButton',
-        rulerModeButton: 'rulerModeButton',
+        rulerModeButton: 'rulerModeButton', multiViewButton: 'multiViewButton',
         imageUpload: 'imageUpload', overlayControls: 'overlayControls',
         overlayIconToolbar: 'overlayIconToolbar', iconToggleVisibility: 'iconToggleVisibility', iconToggleLock: 'iconToggleLock',
+        iconRulerMode: 'iconRulerMode',
         overlayPosX: 'overlayPosX', overlayPosY: 'overlayPosY', overlayOpacity: 'overlayOpacity',
         overlayOpacityValue: 'overlayOpacityValue', overlayScaleInput: 'overlayScaleInput',
-        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay',
-          multiViewButton: 'multiViewButton', // <-- ADD THIS
+        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay'
     };
     const STORAGE_KEYS = {
         paramNames: 'paramNames', paramValues: 'paramValues', environment: 'environment',
@@ -21,30 +20,24 @@ document.addEventListener('DOMContentLoaded', () => {
         overlaySettings: 'toolkitOverlaySettings'
     };
 
-    // --- DOM ELEMENT REFERENCES ---
     const DOMElements = {};
-    for (const key in EL_IDS) {
-        DOMElements[key] = document.getElementById(EL_IDS[key]);
-    }
+    for (const key in EL_IDS) { DOMElements[key] = document.getElementById(EL_IDS[key]); }
 
-    // --- SHARED STATE & CONFIG ---
     const PREDEFINED_PARAMS = {
         names: ['debug', 'rtest', 'forceflush', 'clearcache', 'utm_source', 'utm_medium', 'utm_campaign', 'gclid'],
-        values: ['true', 'params', 'section', 'info', 'false', 'social'],
+        values: ['true', 'params','section', 'info', 'false', 'social'],
     };
     const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 6;
     let statusClearTimer = null; const STATUS_CLEAR_DELAY_MS = 3500;
     let currentOverlaySettings = { x: 0, y: 0, opacity: 1, scale: 1, visible: true, locked: false, imageData: null };
 
-    // --- SHARED HELPER FUNCTIONS ---
     function showStatus(message, isError = false, targetDivId = 'status') {
         const targetDiv = DOMElements[targetDivId];
         if (!targetDiv) { console.error(`Popup Error: Status/Result div with ID '${targetDivId}' not found!`); return; }
         const displayMessage = (typeof message === 'string' || message instanceof String) ? message.trim() : (isError ? "An error occurred." : "Done.");
         if (isError) console.error("Popup Status/Result:", displayMessage);
         if (statusClearTimer && targetDivId === 'status') clearTimeout(statusClearTimer);
-        targetDiv.innerHTML = displayMessage;
-        targetDiv.className = '';
+        targetDiv.innerHTML = displayMessage; targetDiv.className = '';
         if (isError) { targetDiv.classList.add('error'); } else { targetDiv.classList.add('success'); }
         if (targetDivId === 'status') {
             statusClearTimer = setTimeout(() => {
@@ -54,13 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }, STATUS_CLEAR_DELAY_MS);
         }
     }
-
-    function isValidHttpUrl(urlString) {
-        if (!urlString || typeof urlString !== 'string') return false;
-        try { const url = new URL(urlString); return ['http:', 'https:'].includes(url.protocol); }
-        catch (e) { return false; }
-    }
-
+    function isValidHttpUrl(urlString) { try { const url = new URL(urlString); return ['http:', 'https:'].includes(url.protocol); } catch (e) { return false; } }
     async function getActiveValidTab() {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -68,17 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!tab.id) throw new Error('Could not get tab ID.');
             if (!isValidHttpUrl(tab.url)) throw new Error('URL Tools require an HTTP/HTTPS page.');
             return { tab, urlObject: new URL(tab.url) };
-        } catch (error) {
-            showStatus(error.message || "Error getting active tab.", true);
-            setControlsDisabled('urlTools', false);
-            throw error;
-        }
+        } catch (error) { showStatus(error.message || "Error getting active tab.", true); setControlsDisabled('urlTools', false); throw error; }
     }
-
     function setControlsDisabled(group, busy) {
         const spinner = group === 'urlTools' ? DOMElements.loadingSpinnerUrlTools : DOMElements.loadingSpinnerOverlay;
         if (group === 'urlTools') {
-            [DOMElements.addParamButton, DOMElements.paramNameSelect, DOMElements.paramNameCustom, DOMElements.paramValue, DOMElements.clearParamsButton, DOMElements.environmentSelect]
+            [DOMElements.addParamButton, DOMElements.paramNameSelect, DOMElements.paramNameCustom, DOMElements.paramValue, DOMElements.clearParamsButton, DOMElements.environmentSelect, DOMElements.multiViewButton]
             .forEach(el => { if (el) el.disabled = busy; });
         } else if (group === 'overlay') {
             const mainOverlayInputs = [DOMElements.overlayPosX, DOMElements.overlayPosY, DOMElements.overlayOpacity, DOMElements.overlayScaleInput];
@@ -89,22 +71,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOMElements.iconToggleVisibility) DOMElements.iconToggleVisibility.disabled = busy || noImageData;
             if (DOMElements.iconToggleLock) DOMElements.iconToggleLock.disabled = busy || noImageData;
             if (DOMElements.resetOverlayButton) DOMElements.resetOverlayButton.disabled = busy || noImageData;
+            if (DOMElements.iconRulerMode) DOMElements.iconRulerMode.disabled = busy;
         }
         if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.disabled = busy;
         if (spinner) spinner.classList.toggle('active', busy);
     }
 
     // --- FEATURE LOGIC (DEFINITIONS ONLY) ---
-
     async function saveSuggestion(name, value) {
         if (!name || !value) return;
+        const lowerName = name.toLowerCase();
+        const lowerValue = value.toLowerCase();
         try {
             const data = await chrome.storage.sync.get([STORAGE_KEYS.paramNames, STORAGE_KEYS.paramValues]);
             const namesSet = new Set(data[STORAGE_KEYS.paramNames] || []);
             const valuesSet = new Set(data[STORAGE_KEYS.paramValues] || []);
             let changed = false;
-            if (!namesSet.has(name) && !PREDEFINED_PARAMS.names.includes(name)) { namesSet.add(name); changed = true; }
-            if (!valuesSet.has(value) && !PREDEFINED_PARAMS.values.includes(value)) { valuesSet.add(value); changed = true; }
+            if (!namesSet.has(lowerName) && !PREDEFINED_PARAMS.names.includes(lowerName)) { namesSet.add(lowerName); changed = true; }
+            if (!valuesSet.has(lowerValue) && !PREDEFINED_PARAMS.values.includes(lowerValue)) { valuesSet.add(lowerValue); changed = true; }
             if (changed) { await chrome.storage.sync.set({ [STORAGE_KEYS.paramNames]: [...namesSet].sort().slice(-MAX_SUGGESTIONS_STORED), [STORAGE_KEYS.paramValues]: [...valuesSet].sort().slice(-MAX_SUGGESTIONS_STORED) }); }
         } catch (error) { console.error("Error saving suggestion:", error); showStatus("Failed to save suggestion.", true); }
     }
@@ -183,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await chrome.runtime.sendMessage({ source, action, ...data });
             console.log("[POPUP] Response from background/content:", response);
             if (response && response.error) showStatus("Error: " + response.error, true);
-            else if (response && response.status) showStatus("Tool: " + response.status, false);
+            else if (response && response.status) showStatus("Tool: " + response.status, false, 'info');
         } catch (e) { showStatus(e.message || "Error controlling page tool.", true); }
         finally { setControlsDisabled('overlay', false); updateOverlayControlsUI(); }
     }
@@ -191,7 +175,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateOverlayControlsUI() { if(!DOMElements.overlayControls||!DOMElements.overlayIconToolbar||!DOMElements.overlayPosX||!DOMElements.overlayPosY||!DOMElements.overlayOpacity||!DOMElements.overlayOpacityValue||!DOMElements.overlayScaleInput||!DOMElements.iconToggleVisibility||!DOMElements.iconToggleLock)return;DOMElements.overlayPosX.value=currentOverlaySettings.x;DOMElements.overlayPosY.value=currentOverlaySettings.y;DOMElements.overlayOpacity.value=Math.round(100*currentOverlaySettings.opacity);DOMElements.overlayOpacityValue.textContent=Math.round(100*currentOverlaySettings.opacity);DOMElements.overlayScaleInput.value=currentOverlaySettings.scale.toFixed(2);DOMElements.iconToggleVisibility.innerHTML=currentOverlaySettings.visible?"VIS":'<span style="color:#999;text-decoration:line-through;">VIS</span>';DOMElements.iconToggleVisibility.title=currentOverlaySettings.visible?"Hide Overlay":"Show Overlay";DOMElements.iconToggleVisibility.classList.toggle("active-vis",currentOverlaySettings.visible);DOMElements.iconToggleVisibility.classList.toggle("inactive-vis",!currentOverlaySettings.visible);DOMElements.iconToggleLock.innerHTML=currentOverlaySettings.locked?"LCKD":"LOCK";DOMElements.iconToggleLock.title=currentOverlaySettings.locked?"Unlock Controls":"Lock Controls";DOMElements.iconToggleLock.classList.toggle("active-lock",currentOverlaySettings.locked);DOMElements.iconToggleLock.classList.toggle("inactive-lock",!currentOverlaySettings.locked);const t=DOMElements.loadingSpinnerOverlay?.classList.contains("active")||false;setControlsDisabled("overlay",t)}
     function handleOverlaySettingChange(key, value) { if(currentOverlaySettings.locked&&!["visible","locked"].includes(key)){showStatus("Controls are locked! Unlock to make changes.",true);return}currentOverlaySettings[key]=value;const settingsToSave={x:currentOverlaySettings.x,y:currentOverlaySettings.y,opacity:currentOverlaySettings.opacity,visible:currentOverlaySettings.visible,scale:currentOverlaySettings.scale,locked:currentOverlaySettings.locked};chrome.storage.local.set({[STORAGE_KEYS.overlaySettings]:settingsToSave});sendMessageToContentScript("update",{settings:settingsToSave});updateOverlayControlsUI()}
     async function loadInitialOverlayState() { if(!DOMElements.overlayControls&&!DOMElements.overlayIconToolbar)return;try{const result=await chrome.storage.local.get([STORAGE_KEYS.overlayImage,STORAGE_KEYS.overlaySettings]);if(result[STORAGE_KEYS.overlayImage]&&result[STORAGE_KEYS.overlaySettings]){currentOverlaySettings.imageData=result[STORAGE_KEYS.overlayImage];const s=result[STORAGE_KEYS.overlaySettings];currentOverlaySettings.x=s.x||0;currentOverlaySettings.y=s.y||0;currentOverlaySettings.opacity=s.opacity!==undefined?s.opacity:1;currentOverlaySettings.visible=s.visible!==undefined?s.visible:true;currentOverlaySettings.scale=s.scale!==undefined?parseFloat(s.scale):1.0;currentOverlaySettings.locked=s.locked!==undefined?s.locked:false;}}catch(e){console.error("Error loading overlay state:",e),showStatus(e.message||"Error loading overlay state.",true)}};
-
 
     // --- MAIN INITIALIZATION & EVENT LISTENER ATTACHMENT ---
     async function initializeApp() {
@@ -228,10 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
             finally { setControlsDisabled('urlTools', false); }
         });
         if (DOMElements.environmentSelect) {
-            console.log("[DEBUG-ENV] Attaching 'change' listener to envSelect element:", DOMElements.environmentSelect);
             DOMElements.environmentSelect.addEventListener('change', async (e) => {
                 const selectedEnvKey = e.target.value;
-                console.log(`[DEBUG-ENV] EnvSelect 'change' event FIRED. Selected key: '${selectedEnvKey}'`);
                 if (!selectedEnvKey) return;
                 setControlsDisabled('urlTools', true);
                 try {
@@ -249,12 +230,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (document.visibilityState === 'visible') { setControlsDisabled('urlTools', false); }
                 }
             });
-        } else {
-            console.error("[DEBUG-ENV] CRITICAL: DOMElements.environmentSelect was not found. Cannot attach listener.");
         }
         if (DOMElements.toggleSfmcUnwrapperButton) DOMElements.toggleSfmcUnwrapperButton.addEventListener('click', async () => { try{const d=await chrome.storage.sync.get(STORAGE_KEYS.sfmcUnwrapperEnabled);const n=!(d[STORAGE_KEYS.sfmcUnwrapperEnabled]!==undefined?d[STORAGE_KEYS.sfmcUnwrapperEnabled]:true);await chrome.storage.sync.set({[STORAGE_KEYS.sfmcUnwrapperEnabled]:n});updateSfmcUnwrapperButtonUI(n);showStatus(`SFMC Unwrapper ${n?'ENABLED':'DISABLED'}.`,false);}catch(e){showStatus(e.message||'Error toggling SFMC.',true);}});
         if (DOMElements.checkHtmlButton) DOMElements.checkHtmlButton.addEventListener('click', checkHtmlTags);
         if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.addEventListener('click', () => { sendMessageToContentScript('toggleRulerMode'); window.close(); });
+        if (DOMElements.multiViewButton) {
+            DOMElements.multiViewButton.addEventListener('click', async () => {
+                setControlsDisabled('urlTools', true);
+                try {
+                    const { tab, urlObject } = await getActiveValidTab();
+                    const platform = detectPlatform(urlObject.hostname);
+                    if (!platform) { showStatus("Cannot determine platform for Multi-View.", true); return; }
+                    const devUrlObj = new URL(urlObject); devUrlObj.hostname = getHostForEnv(`dev_${platform}`);
+                    const qaUrlObj = new URL(urlObject); qaUrlObj.hostname = getHostForEnv(`qa_${platform}`);
+                    const prodUrlObj = new URL(urlObject); prodUrlObj.hostname = getHostForEnv(`prod_${platform}`);
+                    if (!devUrlObj.hostname || !qaUrlObj.hostname || !prodUrlObj.hostname) { showStatus("Missing host for dev, qa, or prod in this platform's map.", true); return; }
+                    await chrome.runtime.sendMessage({ action: 'activateMultiView', urls: { dev: devUrlObj.toString(), qa: qaUrlObj.toString(), prod: prodUrlObj.toString() } });
+                    window.close();
+                } catch (error) { console.error("Multi-View setup failed:", error.message); }
+                finally { if (document.visibilityState === 'visible') setControlsDisabled('urlTools', false); }
+            });
+        }
         if (DOMElements.imageUpload) DOMElements.imageUpload.addEventListener('change', (event) => { const file=event.target.files[0];if(file&&file.type.startsWith("image/")){const reader=new FileReader;reader.onload=async e=>{currentOverlaySettings={imageData:e.target.result,visible:true,scale:1,x:0,y:0,opacity:1,locked:false};const settingsToSave={x:0,y:0,opacity:1,scale:1,visible:true,locked:false};try{await chrome.storage.local.set({[STORAGE_KEYS.overlayImage]:currentOverlaySettings.imageData,[STORAGE_KEYS.overlaySettings]:settingsToSave});updateOverlayControlsUI();showOverlayControls();sendMessageToContentScript("create",{imageData:currentOverlaySettings.imageData,settings:settingsToSave})}catch(storageError){showStatus("Failed to save overlay image.",true);}};reader.onerror=()=>{showStatus("Error reading image file.",true);};reader.readAsDataURL(file)}else if(file){showStatus("Please select a valid image file.",true);DOMElements.imageUpload.value=""}});
         if (DOMElements.overlayPosX) DOMElements.overlayPosX.addEventListener("input", () => handleOverlaySettingChange("x", parseInt(DOMElements.overlayPosX.value) || 0));
         if (DOMElements.overlayPosY) DOMElements.overlayPosY.addEventListener("input", () => handleOverlaySettingChange("y", parseInt(DOMElements.overlayPosY.value) || 0));
@@ -262,60 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (DOMElements.overlayScaleInput) DOMElements.overlayScaleInput.addEventListener("input", () => { let newScale = parseFloat(DOMElements.overlayScaleInput.value); const minScale = parseFloat(DOMElements.overlayScaleInput.min) || .1, maxScale = parseFloat(DOMElements.overlayScaleInput.max) || 5; (isNaN(newScale) || newScale < minScale ? newScale = minScale : newScale > maxScale && (newScale = maxScale), newScale.toFixed(2) !== parseFloat(DOMElements.overlayScaleInput.value).toFixed(2)) && (DOMElements.overlayScaleInput.value = newScale.toFixed(2)), handleOverlaySettingChange("scale", newScale) });
         if (DOMElements.iconToggleVisibility) DOMElements.iconToggleVisibility.addEventListener("click", () => handleOverlaySettingChange("visible", !currentOverlaySettings.visible));
         if (DOMElements.iconToggleLock) DOMElements.iconToggleLock.addEventListener("click", () => handleOverlaySettingChange("locked", !currentOverlaySettings.locked));
+        if (DOMElements.iconRulerMode) DOMElements.iconRulerMode.addEventListener('click', () => { sendMessageToContentScript('toggleRulerMode'); window.close(); });
         if (DOMElements.resetOverlayButton) DOMElements.resetOverlayButton.addEventListener("click", async () => { try { await chrome.storage.local.remove([STORAGE_KEYS.overlayImage, STORAGE_KEYS.overlaySettings]), currentOverlaySettings = { x: 0, y: 0, opacity: 1, scale: 1, visible: false, locked: false, imageData: null }, DOMElements.imageUpload && (DOMElements.imageUpload.value = ""), updateOverlayControlsUI(), showOverlayControls(), sendMessageToContentScript("remove"), showStatus("Overlay removed.", false) } catch (e) { showStatus(e.message || "Failed to reset overlay.", true) } });
-
-        // --- Add this new event listener inside initializeApp() with the others ---
-if (DOMElements.multiViewButton) {
-    DOMElements.multiViewButton.addEventListener('click', async () => {
-        console.log("Multi-View button clicked.");
-        try {
-            const { tab, urlObject } = await getActiveValidTab(); // Get current tab info
-            const platform = detectPlatform(urlObject.hostname);
-
-            if (!platform) {
-                showStatus("Cannot determine platform for Multi-View.", true);
-                return;
-            }
-
-            const devHost = getHostForEnv(`dev_${platform}`);
-            const qaHost = getHostForEnv(`qa_${platform}`);
-            const prodHost = getHostForEnv(`prod_${platform}`);
-
-            if (!devHost || !qaHost || !prodHost) {
-                showStatus("Missing one or more environment hosts (dev, qa, prod) for this platform.", true);
-                return;
-            }
-
-            // Create the URLs for the iframes
-            const devUrl = new URL(urlObject);
-            devUrl.hostname = devHost;
-            const qaUrl = new URL(urlObject);
-            qaUrl.hostname = qaHost;
-            const prodUrl = new URL(urlObject);
-            prodUrl.hostname = prodHost;
-
-            // Send a message to the background script to execute the multi-view logic
-            await chrome.runtime.sendMessage({
-                action: 'activateMultiView',
-                urls: {
-                    dev: devUrl.toString(),
-                    qa: qaUrl.toString(),
-                    prod: prodUrl.toString()
-                }
-            });
-            window.close(); // Close the popup
-
-        } catch (error) {
-            console.error("Multi-View setup failed:", error);
-            // getActiveValidTab already shows a status message
-        }
-    });
-}
         
         // --- INITIAL UI STATE SETUP ---
         setControlsDisabled('urlTools', true);
         if (DOMElements.imageUpload) DOMElements.imageUpload.disabled = true;
         if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.disabled = true;
+        if (DOMElements.multiViewButton) DOMElements.multiViewButton.disabled = true;
 
         let isInitialTabValid = false;
         let platformForEnvSelect = null;
@@ -325,10 +275,12 @@ if (DOMElements.multiViewButton) {
             platformForEnvSelect = detectPlatform(urlObject.hostname);
             setControlsDisabled('urlTools', false);
             if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.disabled = false;
+            if (DOMElements.multiViewButton) DOMElements.multiViewButton.disabled = false;
         } catch (e) {
             console.warn("initializeApp: Tab not valid for some tools. Error:", e.message);
             if (e.message && !e.message.includes("No active tab")) {
                 if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.disabled = false;
+                if (DOMElements.multiViewButton) DOMElements.multiViewButton.disabled = false;
             }
         }
 
