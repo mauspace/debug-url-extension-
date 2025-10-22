@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
         names: ['debug', 'rtest', 'forceflush', 'clearcache', 'utm_source', 'utm_medium', 'utm_campaign', 'gclid'],
         values: ['true', 'params','section', 'info', 'false', 'social'],
     };
-    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 6;
+    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 9;
     let statusClearTimer = null; const STATUS_CLEAR_DELAY_MS = 3500;
     let currentOverlaySettings = { x: 0, y: 0, opacity: 1, scale: 1, visible: true, locked: false, imageData: null };
 
@@ -78,28 +78,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FEATURE LOGIC (DEFINITIONS ONLY) ---
-    async function saveSuggestion(name, value) {
-        if (!name || !value) return;
-        const lowerName = name.toLowerCase();
-        const lowerValue = value.toLowerCase();
-        try {
-            const data = await chrome.storage.sync.get([STORAGE_KEYS.paramNames, STORAGE_KEYS.paramValues]);
-            const namesSet = new Set(data[STORAGE_KEYS.paramNames] || []);
-            const valuesSet = new Set(data[STORAGE_KEYS.paramValues] || []);
-            let changed = false;
-            if (!namesSet.has(lowerName) && !PREDEFINED_PARAMS.names.includes(lowerName)) { namesSet.add(lowerName); changed = true; }
-            if (!valuesSet.has(lowerValue) && !PREDEFINED_PARAMS.values.includes(lowerValue)) { valuesSet.add(lowerValue); changed = true; }
-            if (changed) { await chrome.storage.sync.set({ [STORAGE_KEYS.paramNames]: [...namesSet].sort().slice(-MAX_SUGGESTIONS_STORED), [STORAGE_KEYS.paramValues]: [...valuesSet].sort().slice(-MAX_SUGGESTIONS_STORED) }); }
-        } catch (error) { console.error("Error saving suggestion:", error); showStatus("Failed to save suggestion.", true); }
+async function saveSuggestion(name, value) {
+    if (!name || !value) return;
+    const lowerName = name.toLowerCase();
+    const lowerValue = value.toLowerCase();
+
+    try {
+        const data = await chrome.storage.sync.get('suggestionMap');
+        const suggestionMap = data.suggestionMap || {};
+
+        // Get the existing values for this name, or create a new Set
+        const valuesForName = new Set(suggestionMap[lowerName] || []);
+
+        // If this value is new for this name, add it and mark for saving
+        if (!valuesForName.has(lowerValue)) {
+            valuesForName.add(lowerValue);
+            suggestionMap[lowerName] = [...valuesForName].sort(); // Store as a sorted array
+            
+            // Limit the number of saved values per name
+            if (suggestionMap[lowerName].length > 10) { // e.g., max 10 values per name
+                suggestionMap[lowerName] = suggestionMap[lowerName].slice(-10);
+            }
+
+            await chrome.storage.sync.set({ suggestionMap });
+            console.log("Updated suggestion map:", suggestionMap);
+        }
+    } catch (error) {
+        console.error("Error saving suggestion:", error);
     }
-    async function updateParamNameDropdown() {
-        if (!DOMElements.paramNameSelect) return;
-        try {
-            const data = await chrome.storage.sync.get([STORAGE_KEYS.paramNames]);
-            const savedNames = data[STORAGE_KEYS.paramNames] || [];
-            const allNames = [...new Set([...PREDEFINED_PARAMS.names, ...savedNames])].sort();
-            const currentCustomValue = DOMElements.paramNameCustom?.value || '';
-            const currentSelectedValue = DOMElements.paramNameSelect.value;
+}
+async function updateParamNameDropdown() {
+    if (!DOMElements.paramNameSelect) return;
+    try {
+        const data = await chrome.storage.sync.get('suggestionMap');
+        const suggestionMap = data.suggestionMap || {};
+        const savedNames = Object.keys(suggestionMap);
+        
+        const allNames = [...new Set([...PREDEFINED_PARAMS.names, ...savedNames])].sort();
             DOMElements.paramNameSelect.innerHTML = '<option value="">-- Select or type custom --</option>';
             allNames.forEach(name => { const option = document.createElement('option'); option.value = name; option.textContent = name; DOMElements.paramNameSelect.appendChild(option); });
             if (currentCustomValue && document.activeElement !== DOMElements.paramNameSelect) DOMElements.paramNameSelect.value = "";
@@ -107,17 +122,56 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOMElements.paramNameCustom && DOMElements.paramNameCustom.value) DOMElements.paramNameSelect.value = "";
         } catch (error) { console.error("Error loading name suggestions:", error); showStatus("Could not load name suggestions.", true); }
     }
-    async function renderValueSuggestions() {
-        if (!DOMElements.valueSuggestions) return;
-        try {
-            const data = await chrome.storage.sync.get([STORAGE_KEYS.paramValues]);
-            const savedValues = data[STORAGE_KEYS.paramValues] || [];
-            const allValues = [...new Set([...PREDEFINED_PARAMS.values, ...savedValues])].sort();
-            const suggestionsToShow = allValues.slice(0, MAX_SUGGESTIONS_DISPLAYED);
-            DOMElements.valueSuggestions.innerHTML = suggestionsToShow.length > 0 ? 'Suggestions: ' : '<i>No value suggestions.</i>';
-            suggestionsToShow.forEach((value) => { const span = document.createElement('span'); span.textContent = value; span.className = 'value-suggestion'; span.dataset.value = value; span.title = `Use '${value}'`; DOMElements.valueSuggestions.appendChild(span); DOMElements.valueSuggestions.appendChild(document.createTextNode(' ')); });
-        } catch (error) { console.error("Error loading value suggestions:", error); DOMElements.valueSuggestions.innerHTML = '<i>Error loading suggestions.</i>'; }
+// In popup.js
+async function renderValueSuggestions(paramName) {
+    if (!DOMElements.valueSuggestions) return;
+    
+    const lowerParamName = paramName ? paramName.toLowerCase() : '';
+    let suggestionsToShow = [];
+
+    // Prioritize predefined suggestions if they exist for this specific name
+    const predefinedMap = {
+        'debug': ['true', 'false'],
+        'rtest': ['params', 'style', 'section', 'info'],
+        'utm_source': ['google', 'facebook', 'email', 'social'],
+        'utm_medium': ['cpc', 'organic', 'referral']
+    };
+
+    if (lowerParamName && predefinedMap[lowerParamName]) {
+        suggestionsToShow = predefinedMap[lowerParamName];
     }
+
+    // Then, add saved suggestions from storage
+    try {
+        const data = await chrome.storage.sync.get('suggestionMap');
+        const suggestionMap = data.suggestionMap || {};
+        const savedValues = suggestionMap[lowerParamName] || [];
+        
+        // Combine and de-duplicate
+        suggestionsToShow = [...new Set([...suggestionsToShow, ...savedValues])].sort();
+    } catch (error) {
+        console.error("Error loading value suggestions:", error);
+        DOMElements.valueSuggestions.innerHTML = '<i>Error loading suggestions.</i>';
+        return;
+    }
+    
+    // Fallback to generic suggestions if no specific ones were found
+    if (suggestionsToShow.length === 0) {
+        suggestionsToShow = PREDEFINED_PARAMS.values; // Your original generic list
+    }
+
+    // Render the spans
+    DOMElements.valueSuggestions.innerHTML = suggestionsToShow.length > 0 ? 'Suggestions: ' : '<i>No value suggestions.</i>';
+    suggestionsToShow.slice(0, MAX_SUGGESTIONS_DISPLAYED).forEach((value) => {
+        const span = document.createElement('span');
+        span.textContent = value;
+        span.className = 'value-suggestion';
+        span.dataset.value = value;
+        span.title = `Use '${value}'`;
+        DOMElements.valueSuggestions.appendChild(span);
+        DOMElements.valueSuggestions.appendChild(document.createTextNode(' '));
+    });
+}
     function detectPlatform(hostname) {
         const lowerHost = hostname.toLowerCase();
         if (lowerHost.includes('nextcar')) return 'nextcar';
