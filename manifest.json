@@ -15,7 +15,13 @@
     "*://user-content.s4.sfmc-content.com/*",
     "*://*.rapp.com/*"
   ],
-  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["*://*.rapp.com/*"],
+      "js": ["multi-view-frame.js"],
+      "all_frames": true
+    }
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

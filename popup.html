@@ -5,98 +5,41 @@
   <style>
     /* === Light Theme (Default) CSS Variables === */
     :root {
-        --bg-color: #f8f9fa;
-        --text-color: #212529;
-        --border-color: #dee2e6;
-        --input-bg: #fff;
-        --primary-color: #007bff;
-        --primary-hover: #0056b3;
-        --secondary-color: #6c757d;
-        --secondary-hover: #5a6268;
-        --danger-color: #dc3545;
-        --danger-hover: #c82333;
-        --success-color: #28a745;
-        --success-hover: #218838;
-        --warn-color: #ffc107;
-        --warn-hover: #e0a800;
-        --warn-text-color: black;
-        --info-bg: #d1ecf1;
-        --info-text: #0c5460;
-        --info-border: #bee5eb;
-        --success-bg: #d4edda;
-        --success-text: #155724;
-        --success-border: #c3e6cb;
-        --error-bg: #f8d7da;
-        --error-text: #721c24;
-        --error-border: #f5c6cb;
-        --icon-bg: #f8f9fa;
-        --icon-border: #ced4da;
-        --icon-text: #495057;
-        --suggestion-bg: #e9ecef;
-        --suggestion-hover-bg: #dae0e5;
-        --suggestion-text: #007bff;
-        --suggestion-hover-text: #004085;
-        --label-color: #495057;
-        --placeholder-color: #6c757d;
-        --hr-color: #dee2e6;
+        --bg-color: #f8f9fa; --text-color: #212529; --border-color: #dee2e6;
+        --input-bg: #fff; --primary-color: #007bff; --primary-hover: #0056b3;
+        --secondary-color: #6c757d; --secondary-hover: #5a6268;
+        --danger-color: #dc3545; --danger-hover: #c82333; --success-color: #28a745;
+        --success-hover: #218838; --warn-color: #ffc107; --warn-hover: #e0a800;
+        --warn-text-color: black; --info-bg: #d1ecf1; --info-text: #0c5460;
+        --info-border: #bee5eb; --success-bg: #d4edda; --success-text: #155724;
+        --success-border: #c3e6cb; --error-bg: #f8d7da; --error-text: #721c24;
+        --error-border: #f5c6cb; --icon-bg: #f8f9fa; --icon-border: #ced4da;
+        --icon-text: #495057; --suggestion-bg: #e9ecef; --suggestion-hover-bg: #dae0e5;
+        --suggestion-text: #007bff; --suggestion-hover-text: #004085;
+        --label-color: #495057; --placeholder-color: #6c757d; --hr-color: #dee2e6;
     }
 
     /* === Dark Theme CSS Variable Overrides === */
     body[data-theme="dark"] {
-        --bg-color: #212529;
-        --text-color: #e9ecef;
-        --border-color: #495057;
-        --input-bg: #343a40;
-        --primary-color: #3794ff;
-        --primary-hover: #1e7eeb;
-        --secondary-color: #5a6268;
-        --secondary-hover: #495057;
-        --danger-hover: #b12d31;
-        --success-hover: #317d2e;
-        --warn-hover: #d99e00;
-        --info-bg: #2c5364;
-        --info-text: #bee5eb;
-        --info-border: #3c7a89;
-        --success-bg: #1d4d23;
-        --success-text: #c3e6cb;
-        --success-border: #2c6f33;
-        --error-bg: #591d22;
-        --error-text: #f5c6cb;
-        --error-border: #8b2c31;
-        --icon-bg: #4a4a4a;
-        --icon-border: #666;
-        --icon-text: #e9ecef;
-        --suggestion-bg: #3a3a3a;
-        --suggestion-hover-bg: var(--primary-hover);
-        --suggestion-text: #3794ff;
-        --suggestion-hover-text: #fff;
-        --label-color: #adb5bd;
-        --placeholder-color: #6c757d;
-        --hr-color: #495057;
+        --bg-color: #212529; --text-color: #e9ecef; --border-color: #495057;
+        --input-bg: #343a40; --primary-color: #3794ff; --primary-hover: #1e7eeb;
+        --secondary-color: #5a6268; --secondary-hover: #495057;
+        --danger-hover: #b12d31; --success-hover: #317d2e; --warn-hover: #d99e00;
+        --info-bg: #2c5364; --info-text: #bee5eb; --info-border: #3c7a89;
+        --success-bg: #1d4d23; --success-text: #c3e6cb; --success-border: #2c6f33;
+        --error-bg: #591d22; --error-text: #f5c6cb; --error-border: #8b2c31;
+        --icon-bg: #4a4a4a; --icon-border: #666; --icon-text: #e9ecef;
+        --suggestion-bg: #3a3a3a; --suggestion-hover-bg: var(--primary-hover);
+        --suggestion-text: #3794ff; --suggestion-hover-text: #fff;
+        --label-color: #adb5bd; --placeholder-color: #6c757d; --hr-color: #495057;
     }
 
     /* === Universal Component Styles (using variables) === */
-    body {
-        padding: 15px;
-        width: 340px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-        font-size: 14px;
-        color: var(--text-color);
-        background-color: var(--bg-color);
-        transition: background-color 0.2s, color 0.2s;
-    }
-    h3 {
-        margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color);
-        padding-bottom: 8px; font-size: 16px; color: var(--primary-color); font-weight: 600;
-    }
+    body { padding: 15px; width: 340px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; font-size: 14px; color: var(--text-color); background-color: var(--bg-color); transition: background-color 0.2s, color 0.2s; }
+    h3 { margin-top: 20px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; font-size: 16px; color: var(--primary-color); font-weight: 600; }
     h3:first-of-type { margin-top: 0; }
     label { display: block; margin-top: 12px; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: var(--label-color); }
-    input, select, textarea, button {
-        width: 100%; margin-bottom: 10px; padding: 9px 12px; box-sizing: border-box;
-        background-color: var(--input-bg); border: 1px solid var(--border-color);
-        color: var(--text-color); border-radius: 4px; font-size: 14px;
-        transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
-    }
+    input, select, textarea, button { width: 100%; margin-bottom: 10px; padding: 9px 12px; box-sizing: border-box; background-color: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; font-size: 14px; transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out; }
     input::placeholder, textarea::placeholder { color: var(--placeholder-color); }
     input:focus, select:focus, textarea:focus { border-color: var(--primary-color); outline: 0; box-shadow: 0 0 0 0.2rem hsla(from var(--primary-color) h s l / 0.25) }
     input[type="file"] { padding: 5px; } input[type="range"] { padding: 0; }
@@ -105,9 +48,7 @@
     button:disabled { background-color: #4a4a4a; color: #888; cursor: not-allowed; }
     body[data-theme="light"] button:disabled { background-color: #e9ecef; color: #6c757d; }
     hr { margin: 25px 0; border: 0; border-top: 1px solid var(--hr-color); }
-
-    .main-tools { display: flex; gap: 10px; }
-    .main-tools button { flex: 1; background-color: var(--secondary-color); }
+    .main-tools { display: flex; gap: 10px; } .main-tools button { flex: 1; background-color: var(--secondary-color); }
     .main-tools button:hover:not(:disabled) { background-color: var(--secondary-hover); }
     #clearParams { background-color: var(--danger-color); }
     #clearParams:hover:not(:disabled) { background-color: var(--danger-hover); }
@@ -130,10 +71,9 @@
     .icon-button.inactive-vis, .icon-button.inactive-lock { background-color: var(--secondary-color); color: white; border-color: var(--secondary-hover); }
     #resetOverlay { background-color: var(--warn-color); color: var(--warn-text-color); }
     #resetOverlay:hover:not(:disabled) { background-color: var(--warn-hover); }
-    
-    .spinner { border:3px solid rgba(0,0,0,0.1); width:18px; height:18px; border-radius:50%; border-left-color: var(--primary-color); animation:spin .8s linear infinite; display:none; margin:10px auto }
+    .spinner { border:3px solid hsla(from var(--text-color) h s l / 0.1); width:18px; height:18px; border-radius:50%; border-left-color: var(--primary-color); animation:spin .8s linear infinite; display:none; margin:10px auto }
     .spinner.active{display:block} @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-
+    
     /* Theme Switcher Styles */
     .theme-switcher { position: absolute; top: 10px; right: 10px; }
     .theme-switcher label { display: flex; align-items: center; cursor: pointer; font-size: 11px; font-weight: 500; color: var(--label-color); }
@@ -145,16 +85,13 @@
     input:checked + .switch-track .switch-thumb { transform: translateX(16px); }
   </style>
 </head>
-<body data-theme="light"> <!-- Default to light theme -->
+<body data-theme="light">
     
-    <!-- Theme Switcher UI -->
     <div class="theme-switcher">
         <label for="themeToggle">
             Dark
             <input type="checkbox" id="themeToggle">
-            <span class="switch-track">
-                <span class="switch-thumb"></span>
-            </span>
+            <span class="switch-track"><span class="switch-thumb"></span></span>
         </label>
     </div>
 
@@ -169,6 +106,7 @@
     <label for="paramValue">Parameter Value:</label> <input type="text" id="paramValue" placeholder="Parameter value">
     <div id="valueSuggestions" class="suggestion-container"><i>Loading suggestions...</i></div> <div id="status"></div> <div id="loadingSpinnerUrlTools" class="spinner"></div>
     <button id="addParam">Add Parameter(s)</button> <button id="clearParams">Clear All Parameters</button>
+    <button id="clearSuggestionsButton" style="background-color: #ffc107; color: black;" title="Clear all saved parameter name and value suggestions.">Clear Suggestions</button>
     <label for="environmentSelect" style="margin-top:15px;">Switch Environment:</label>
     <select id="environmentSelect">
         <option value="">-- Select Environment --</option>
@@ -178,7 +116,8 @@
         <option value="dev_fs">FS - Dev</option> <option value="qa_fs">FS - QA</option> <option value="prod_fs">FS - Prod</option> <option value="usync_fs">FS - Sync</option>
         <option value="dev_retail">Retail - Dev</option> <option value="qa_retail">Retail - QA</option> <option value="prod_retail">Retail - Prod</option> <option value="usync_retail">Retail - Sync</option>
     </select>
-    <button id="toggleSfmcUnwrapper" style="margin-top: 15px;">Toggle SFMC Unwrapper</button> <hr>
+    <button id="toggleSfmcUnwrapper" style="margin-top: 15px;">Toggle SFMC Unwrapper</button>
+    <hr>
     <h3>HTML Tag Checker</h3>
     <label for="htmlCheckerTextarea">Paste Email HTML Code Here:</label>
     <textarea id="htmlCheckerTextarea" rows="8" placeholder="e.g., <table><tr><td>...</td></tr></table>"></textarea>
