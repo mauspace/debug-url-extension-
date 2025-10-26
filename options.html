@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Dev Toolkit Pro - Options</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px 40px; color: #333; }
+        h1 { border-bottom: 2px solid #007bff; padding-bottom: 10px; color: #007bff; }
+        h2 { border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 40px;}
+        .container { max-width: 800px; margin: 0 auto; }
+        .suggestion-list { list-style: none; padding: 0; }
+        .suggestion-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .suggestion-list li:last-child { border-bottom: none; }
+        .suggestion-list .value { font-family: monospace; font-size: 1.1em; }
+        .delete-btn {
+            background-color: #dc3545; color: white; border: none;
+            padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        }
+        .delete-btn:hover { background-color: #c82333; }
+        #clearAllButton {
+            margin-top: 20px;
+            background-color: #c82333;
+            padding: 10px 15px;
+            font-weight: bold;
+        }
+        #status { margin-top: 15px; font-weight: bold; color: green; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Web Dev Toolkit Pro - Options</h1>
+
+        <h2>Saved Parameter Suggestions</h2>
+        <p>Here you can view and remove the parameter names and values you have saved over time.</p>
+
+        <div id="status"></div>
+        <button id="clearAllButton">Clear All Saved Suggestions</button>
+
+        <h3>Saved Names</h3>
+        <ul id="nameSuggestionsList" class="suggestion-list">
+            <!-- Names will be populated by JavaScript -->
+        </ul>
+
+        <h3>Saved Values</h3>
+        <ul id="valueSuggestionsList" class="suggestion-list">
+            <!-- Values will be populated by JavaScript -->
+        </ul>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

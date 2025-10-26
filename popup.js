@@ -1,12 +1,21 @@
-// popup.js (Full code with lowercase suggestions and Multi-View integration)
+// popup.js (Combined Logic - Readable URL Tools & Pixel Overlay with all features)
 document.addEventListener('DOMContentLoaded', () => {
+    // --- ELEMENT IDs & STORAGE KEYS ---
     const EL_IDS = {
+            // ... all other IDs
+        themeToggle: 'themeToggle', // <-- ADD THIS
+        openOptionsPageLink: 'openOptionsPageLink',
+        // URL Tools
         addParamButton: 'addParam', paramNameSelect: 'paramNameSelect', paramNameCustom: 'paramNameCustom',
         paramValue: 'paramValue', clearParamsButton: 'clearParams', environmentSelect: 'environmentSelect',
         valueSuggestions: 'valueSuggestions', status: 'status', loadingSpinnerUrlTools: 'loadingSpinnerUrlTools',
         toggleSfmcUnwrapperButton: 'toggleSfmcUnwrapper',
+        // HTML Checker
         htmlCheckerTextarea: 'htmlCheckerTextarea', htmlCheckerResult: 'htmlCheckerResult', checkHtmlButton: 'checkHtmlButton',
-        rulerModeButton: 'rulerModeButton', multiViewButton: 'multiViewButton',
+        // Page Tools
+        rulerModeButton: 'rulerModeButton',
+        multiViewButton: 'multiViewButton',
+        // Pixel Overlay Tools
         imageUpload: 'imageUpload', overlayControls: 'overlayControls',
         overlayIconToolbar: 'overlayIconToolbar', iconToggleVisibility: 'iconToggleVisibility', iconToggleLock: 'iconToggleLock',
         iconRulerMode: 'iconRulerMode',
@@ -15,30 +24,65 @@ document.addEventListener('DOMContentLoaded', () => {
         resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay'
     };
     const STORAGE_KEYS = {
+        theme: 'toolkitTheme', // <-- ADD THIS
         paramNames: 'paramNames', paramValues: 'paramValues', environment: 'environment',
         sfmcUnwrapperEnabled: 'sfmcUnwrapperEnabled', overlayImage: 'toolkitOverlayImage',
         overlaySettings: 'toolkitOverlaySettings'
     };
 
+    // --- DOM ELEMENT REFERENCES ---
     const DOMElements = {};
-    for (const key in EL_IDS) { DOMElements[key] = document.getElementById(EL_IDS[key]); }
+    for (const key in EL_IDS) {
+        DOMElements[key] = document.getElementById(EL_IDS[key]);
+    }
 
+    // --- SHARED STATE & CONFIG ---
     const PREDEFINED_PARAMS = {
         names: ['debug', 'rtest', 'forceflush', 'clearcache', 'utm_source', 'utm_medium', 'utm_campaign', 'gclid'],
-        values: ['true', 'params','section', 'info', 'false', 'social'],
+        values: ['true', 'true', 'params', 'section', 'info', 'false', 'social'],
     };
-    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 9;
+    const MAX_SUGGESTIONS_STORED = 25; const MAX_SUGGESTIONS_DISPLAYED = 6;
     let statusClearTimer = null; const STATUS_CLEAR_DELAY_MS = 3500;
     let currentOverlaySettings = { x: 0, y: 0, opacity: 1, scale: 1, visible: true, locked: false, imageData: null };
 
+     function applyTheme(theme) {
+        if (theme === 'dark') {
+            document.body.dataset.theme = 'dark';
+            if(DOMElements.themeToggle) DOMElements.themeToggle.checked = true;
+        } else {
+            document.body.dataset.theme = 'light';
+            if(DOMElements.themeToggle) DOMElements.themeToggle.checked = false;
+        }
+    }
+
+    async function loadAndApplyTheme() {
+        try {
+            const data = await chrome.storage.sync.get(STORAGE_KEYS.theme);
+            const savedTheme = data[STORAGE_KEYS.theme] || 'light'; // Default to light theme
+            applyTheme(savedTheme);
+        } catch (e) {
+            console.error("Error loading theme:", e);
+            applyTheme('light'); // Fallback to light theme on error
+        }
+    }
+
+    // --- SHARED HELPER FUNCTIONS ---
     function showStatus(message, isError = false, targetDivId = 'status') {
         const targetDiv = DOMElements[targetDivId];
-        if (!targetDiv) { console.error(`Popup Error: Status/Result div with ID '${targetDivId}' not found!`); return; }
+        if (!targetDiv) {
+            console.error(`Popup Error: Status/Result div with ID '${targetDivId}' not found!`);
+            return;
+        }
         const displayMessage = (typeof message === 'string' || message instanceof String) ? message.trim() : (isError ? "An error occurred." : "Done.");
         if (isError) console.error("Popup Status/Result:", displayMessage);
         if (statusClearTimer && targetDivId === 'status') clearTimeout(statusClearTimer);
-        targetDiv.innerHTML = displayMessage; targetDiv.className = '';
-        if (isError) { targetDiv.classList.add('error'); } else { targetDiv.classList.add('success'); }
+        targetDiv.innerHTML = displayMessage;
+        targetDiv.className = '';
+        if (isError) {
+            targetDiv.classList.add('error');
+        } else {
+            targetDiv.classList.add('success');
+        }
         if (targetDivId === 'status') {
             statusClearTimer = setTimeout(() => {
                 if (DOMElements.status && DOMElements.status.innerHTML === displayMessage) {
@@ -47,7 +91,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }, STATUS_CLEAR_DELAY_MS);
         }
     }
-    function isValidHttpUrl(urlString) { try { const url = new URL(urlString); return ['http:', 'https:'].includes(url.protocol); } catch (e) { return false; } }
+
+    function isValidHttpUrl(urlString) {
+        if (!urlString || typeof urlString !== 'string') return false;
+        try { const url = new URL(urlString); return ['http:', 'https:'].includes(url.protocol); }
+        catch (e) { return false; }
+    }
+
     async function getActiveValidTab() {
         try {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -55,12 +105,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!tab.id) throw new Error('Could not get tab ID.');
             if (!isValidHttpUrl(tab.url)) throw new Error('URL Tools require an HTTP/HTTPS page.');
             return { tab, urlObject: new URL(tab.url) };
-        } catch (error) { showStatus(error.message || "Error getting active tab.", true); setControlsDisabled('urlTools', false); throw error; }
+        } catch (error) {
+            showStatus(error.message || "Error getting active tab.", true);
+            setControlsDisabled('urlTools', false);
+            throw error;
+        }
     }
+
     function setControlsDisabled(group, busy) {
         const spinner = group === 'urlTools' ? DOMElements.loadingSpinnerUrlTools : DOMElements.loadingSpinnerOverlay;
         if (group === 'urlTools') {
-            [DOMElements.addParamButton, DOMElements.paramNameSelect, DOMElements.paramNameCustom, DOMElements.paramValue, DOMElements.clearParamsButton, DOMElements.environmentSelect, DOMElements.multiViewButton]
+            [DOMElements.addParamButton, DOMElements.paramNameSelect, DOMElements.paramNameCustom, DOMElements.paramValue, DOMElements.clearParamsButton, DOMElements.environmentSelect]
             .forEach(el => { if (el) el.disabled = busy; });
         } else if (group === 'overlay') {
             const mainOverlayInputs = [DOMElements.overlayPosX, DOMElements.overlayPosY, DOMElements.overlayOpacity, DOMElements.overlayScaleInput];
@@ -71,50 +126,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (DOMElements.iconToggleVisibility) DOMElements.iconToggleVisibility.disabled = busy || noImageData;
             if (DOMElements.iconToggleLock) DOMElements.iconToggleLock.disabled = busy || noImageData;
             if (DOMElements.resetOverlayButton) DOMElements.resetOverlayButton.disabled = busy || noImageData;
-            if (DOMElements.iconRulerMode) DOMElements.iconRulerMode.disabled = busy;
         }
         if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.disabled = busy;
+        if (DOMElements.multiViewButton) DOMElements.multiViewButton.disabled = busy;
         if (spinner) spinner.classList.toggle('active', busy);
     }
 
     // --- FEATURE LOGIC (DEFINITIONS ONLY) ---
-async function saveSuggestion(name, value) {
-    if (!name || !value) return;
-    const lowerName = name.toLowerCase();
-    const lowerValue = value.toLowerCase();
 
-    try {
-        const data = await chrome.storage.sync.get('suggestionMap');
-        const suggestionMap = data.suggestionMap || {};
-
-        // Get the existing values for this name, or create a new Set
-        const valuesForName = new Set(suggestionMap[lowerName] || []);
-
-        // If this value is new for this name, add it and mark for saving
-        if (!valuesForName.has(lowerValue)) {
-            valuesForName.add(lowerValue);
-            suggestionMap[lowerName] = [...valuesForName].sort(); // Store as a sorted array
-            
-            // Limit the number of saved values per name
-            if (suggestionMap[lowerName].length > 10) { // e.g., max 10 values per name
-                suggestionMap[lowerName] = suggestionMap[lowerName].slice(-10);
-            }
-
-            await chrome.storage.sync.set({ suggestionMap });
-            console.log("Updated suggestion map:", suggestionMap);
-        }
-    } catch (error) {
-        console.error("Error saving suggestion:", error);
+    async function saveSuggestion(name, value) {
+        if (!name || !value) return;
+        const lowerName = name.toLowerCase();
+        const lowerValue = value.toLowerCase();
+        try {
+            const data = await chrome.storage.sync.get([STORAGE_KEYS.paramNames, STORAGE_KEYS.paramValues]);
+            const namesSet = new Set(data[STORAGE_KEYS.paramNames] || []);
+            const valuesSet = new Set(data[STORAGE_KEYS.paramValues] || []);
+            let changed = false;
+            if (!namesSet.has(lowerName) && !PREDEFINED_PARAMS.names.includes(lowerName)) { namesSet.add(lowerName); changed = true; }
+            if (!valuesSet.has(lowerValue) && !PREDEFINED_PARAMS.values.includes(lowerValue)) { valuesSet.add(lowerValue); changed = true; }
+            if (changed) { await chrome.storage.sync.set({ [STORAGE_KEYS.paramNames]: [...namesSet].sort().slice(-MAX_SUGGESTIONS_STORED), [STORAGE_KEYS.paramValues]: [...valuesSet].sort().slice(-MAX_SUGGESTIONS_STORED) }); }
+        } catch (error) { console.error("Error saving suggestion:", error); showStatus("Failed to save suggestion.", true); }
     }
-}
-async function updateParamNameDropdown() {
-    if (!DOMElements.paramNameSelect) return;
-    try {
-        const data = await chrome.storage.sync.get('suggestionMap');
-        const suggestionMap = data.suggestionMap || {};
-        const savedNames = Object.keys(suggestionMap);
-        
-        const allNames = [...new Set([...PREDEFINED_PARAMS.names, ...savedNames])].sort();
+    async function updateParamNameDropdown() {
+        if (!DOMElements.paramNameSelect) return;
+        try {
+            const data = await chrome.storage.sync.get([STORAGE_KEYS.paramNames]);
+            const savedNames = data[STORAGE_KEYS.paramNames] || [];
+            const allNames = [...new Set([...PREDEFINED_PARAMS.names, ...savedNames])].sort();
+            const currentCustomValue = DOMElements.paramNameCustom?.value || '';
+            const currentSelectedValue = DOMElements.paramNameSelect.value;
             DOMElements.paramNameSelect.innerHTML = '<option value="">-- Select or type custom --</option>';
             allNames.forEach(name => { const option = document.createElement('option'); option.value = name; option.textContent = name; DOMElements.paramNameSelect.appendChild(option); });
             if (currentCustomValue && document.activeElement !== DOMElements.paramNameSelect) DOMElements.paramNameSelect.value = "";
@@ -122,56 +163,17 @@ async function updateParamNameDropdown() {
             if (DOMElements.paramNameCustom && DOMElements.paramNameCustom.value) DOMElements.paramNameSelect.value = "";
         } catch (error) { console.error("Error loading name suggestions:", error); showStatus("Could not load name suggestions.", true); }
     }
-// In popup.js
-async function renderValueSuggestions(paramName) {
-    if (!DOMElements.valueSuggestions) return;
-    
-    const lowerParamName = paramName ? paramName.toLowerCase() : '';
-    let suggestionsToShow = [];
-
-    // Prioritize predefined suggestions if they exist for this specific name
-    const predefinedMap = {
-        'debug': ['true', 'false'],
-        'rtest': ['params', 'style', 'section', 'info'],
-        'utm_source': ['google', 'facebook', 'email', 'social'],
-        'utm_medium': ['cpc', 'organic', 'referral']
-    };
-
-    if (lowerParamName && predefinedMap[lowerParamName]) {
-        suggestionsToShow = predefinedMap[lowerParamName];
+    async function renderValueSuggestions() {
+        if (!DOMElements.valueSuggestions) return;
+        try {
+            const data = await chrome.storage.sync.get([STORAGE_KEYS.paramValues]);
+            const savedValues = data[STORAGE_KEYS.paramValues] || [];
+            const allValues = [...new Set([...PREDEFINED_PARAMS.values, ...savedValues])].sort();
+            const suggestionsToShow = allValues.slice(0, MAX_SUGGESTIONS_DISPLAYED);
+            DOMElements.valueSuggestions.innerHTML = suggestionsToShow.length > 0 ? 'Suggestions: ' : '<i>No value suggestions.</i>';
+            suggestionsToShow.forEach((value) => { const span = document.createElement('span'); span.textContent = value; span.className = 'value-suggestion'; span.dataset.value = value; span.title = `Use '${value}'`; DOMElements.valueSuggestions.appendChild(span); DOMElements.valueSuggestions.appendChild(document.createTextNode(' ')); });
+        } catch (error) { console.error("Error loading value suggestions:", error); DOMElements.valueSuggestions.innerHTML = '<i>Error loading suggestions.</i>'; }
     }
-
-    // Then, add saved suggestions from storage
-    try {
-        const data = await chrome.storage.sync.get('suggestionMap');
-        const suggestionMap = data.suggestionMap || {};
-        const savedValues = suggestionMap[lowerParamName] || [];
-        
-        // Combine and de-duplicate
-        suggestionsToShow = [...new Set([...suggestionsToShow, ...savedValues])].sort();
-    } catch (error) {
-        console.error("Error loading value suggestions:", error);
-        DOMElements.valueSuggestions.innerHTML = '<i>Error loading suggestions.</i>';
-        return;
-    }
-    
-    // Fallback to generic suggestions if no specific ones were found
-    if (suggestionsToShow.length === 0) {
-        suggestionsToShow = PREDEFINED_PARAMS.values; // Your original generic list
-    }
-
-    // Render the spans
-    DOMElements.valueSuggestions.innerHTML = suggestionsToShow.length > 0 ? 'Suggestions: ' : '<i>No value suggestions.</i>';
-    suggestionsToShow.slice(0, MAX_SUGGESTIONS_DISPLAYED).forEach((value) => {
-        const span = document.createElement('span');
-        span.textContent = value;
-        span.className = 'value-suggestion';
-        span.dataset.value = value;
-        span.title = `Use '${value}'`;
-        DOMElements.valueSuggestions.appendChild(span);
-        DOMElements.valueSuggestions.appendChild(document.createTextNode(' '));
-    });
-}
     function detectPlatform(hostname) {
         const lowerHost = hostname.toLowerCase();
         if (lowerHost.includes('nextcar')) return 'nextcar';
@@ -234,7 +236,28 @@ async function renderValueSuggestions(paramName) {
     async function initializeApp() {
         console.log("Toolkit Pro Popup: Initializing app...");
 
-        // ATTACH ALL EVENT LISTENERS
+
+        // Load and apply the theme FIRST, so the UI draws correctly from the start.
+        await loadAndApplyTheme();
+
+        // Attach all event listeners
+        if (DOMElements.themeToggle) {
+            DOMElements.themeToggle.addEventListener('change', (e) => {
+                const newTheme = e.target.checked ? 'dark' : 'light';
+                applyTheme(newTheme);
+                chrome.storage.sync.set({ [STORAGE_KEYS.theme]: newTheme });
+            });
+        }
+
+        // Add this listener inside initializeApp()
+if (DOMElements.openOptionsPageLink) {
+    DOMElements.openOptionsPageLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        chrome.runtime.openOptionsPage();
+    });
+}
+
+        // --- ATTACH ALL EVENT LISTENERS ---
         if (DOMElements.addParamButton) DOMElements.addParamButton.addEventListener('click', async () => {
             const paramNameToUse = (DOMElements.paramNameCustom?.value.trim() || DOMElements.paramNameSelect?.value) || '';
             const paramValueToUse = DOMElements.paramValue?.value.trim() || '';
@@ -255,6 +278,7 @@ async function renderValueSuggestions(paramName) {
             } catch (error) { console.error("Add param error:", error.message); }
             finally { setControlsDisabled('urlTools', false); }
         });
+
         if (DOMElements.clearParamsButton) DOMElements.clearParamsButton.addEventListener('click', async () => {
             setControlsDisabled('urlTools', true);
             try {
@@ -264,6 +288,7 @@ async function renderValueSuggestions(paramName) {
             } catch (error) { console.error("Clear params error:", error.message); }
             finally { setControlsDisabled('urlTools', false); }
         });
+
         if (DOMElements.environmentSelect) {
             DOMElements.environmentSelect.addEventListener('change', async (e) => {
                 const selectedEnvKey = e.target.value;
@@ -285,26 +310,40 @@ async function renderValueSuggestions(paramName) {
                 }
             });
         }
+        
+        if (DOMElements.valueSuggestions) {
+            DOMElements.valueSuggestions.addEventListener('click', (e) => {
+                if (e.target && e.target.classList.contains('value-suggestion')) {
+                    const value = e.target.dataset.value;
+                    if (value !== undefined && DOMElements.paramValue) {
+                        DOMElements.paramValue.value = value;
+                        DOMElements.paramValue.focus();
+                    }
+                }
+            });
+        }
+
+        if (DOMElements.paramNameSelect) DOMElements.paramNameSelect.addEventListener('change', () => { if (DOMElements.paramNameCustom && DOMElements.paramNameSelect.value !== "") DOMElements.paramNameCustom.value = ""; });
+        if (DOMElements.paramNameCustom) DOMElements.paramNameCustom.addEventListener('input', () => { if (DOMElements.paramNameSelect && DOMElements.paramNameCustom.value !== "") DOMElements.paramNameSelect.value = ""; });
+        
         if (DOMElements.toggleSfmcUnwrapperButton) DOMElements.toggleSfmcUnwrapperButton.addEventListener('click', async () => { try{const d=await chrome.storage.sync.get(STORAGE_KEYS.sfmcUnwrapperEnabled);const n=!(d[STORAGE_KEYS.sfmcUnwrapperEnabled]!==undefined?d[STORAGE_KEYS.sfmcUnwrapperEnabled]:true);await chrome.storage.sync.set({[STORAGE_KEYS.sfmcUnwrapperEnabled]:n});updateSfmcUnwrapperButtonUI(n);showStatus(`SFMC Unwrapper ${n?'ENABLED':'DISABLED'}.`,false);}catch(e){showStatus(e.message||'Error toggling SFMC.',true);}});
         if (DOMElements.checkHtmlButton) DOMElements.checkHtmlButton.addEventListener('click', checkHtmlTags);
         if (DOMElements.rulerModeButton) DOMElements.rulerModeButton.addEventListener('click', () => { sendMessageToContentScript('toggleRulerMode'); window.close(); });
-        if (DOMElements.multiViewButton) {
-            DOMElements.multiViewButton.addEventListener('click', async () => {
-                setControlsDisabled('urlTools', true);
-                try {
-                    const { tab, urlObject } = await getActiveValidTab();
-                    const platform = detectPlatform(urlObject.hostname);
-                    if (!platform) { showStatus("Cannot determine platform for Multi-View.", true); return; }
-                    const devUrlObj = new URL(urlObject); devUrlObj.hostname = getHostForEnv(`dev_${platform}`);
-                    const qaUrlObj = new URL(urlObject); qaUrlObj.hostname = getHostForEnv(`qa_${platform}`);
-                    const prodUrlObj = new URL(urlObject); prodUrlObj.hostname = getHostForEnv(`prod_${platform}`);
-                    if (!devUrlObj.hostname || !qaUrlObj.hostname || !prodUrlObj.hostname) { showStatus("Missing host for dev, qa, or prod in this platform's map.", true); return; }
-                    await chrome.runtime.sendMessage({ action: 'activateMultiView', urls: { dev: devUrlObj.toString(), qa: qaUrlObj.toString(), prod: prodUrlObj.toString() } });
-                    window.close();
-                } catch (error) { console.error("Multi-View setup failed:", error.message); }
-                finally { if (document.visibilityState === 'visible') setControlsDisabled('urlTools', false); }
-            });
-        }
+        if (DOMElements.multiViewButton) DOMElements.multiViewButton.addEventListener('click', async () => {
+            setControlsDisabled('urlTools', true);
+            try {
+                const { tab, urlObject } = await getActiveValidTab();
+                const platform = detectPlatform(urlObject.hostname);
+                if (!platform) { showStatus("Cannot determine platform for Multi-View.", true); return; }
+                const devUrlObj = new URL(urlObject); devUrlObj.hostname = getHostForEnv(`dev_${platform}`);
+                const qaUrlObj = new URL(urlObject); qaUrlObj.hostname = getHostForEnv(`qa_${platform}`);
+                const prodUrlObj = new URL(urlObject); prodUrlObj.hostname = getHostForEnv(`prod_${platform}`);
+                if (!devUrlObj.hostname || !qaUrlObj.hostname || !prodUrlObj.hostname) { showStatus("Missing host for dev, qa, or prod in this platform's map.", true); return; }
+                await chrome.runtime.sendMessage({ action: 'activateMultiView', urls: { dev: devUrlObj.toString(), qa: qaUrlObj.toString(), prod: prodUrlObj.toString() } });
+                window.close();
+            } catch (error) { console.error("Multi-View setup failed:", error.message); }
+            finally { if (document.visibilityState === 'visible') setControlsDisabled('urlTools', false); }
+        });
         if (DOMElements.imageUpload) DOMElements.imageUpload.addEventListener('change', (event) => { const file=event.target.files[0];if(file&&file.type.startsWith("image/")){const reader=new FileReader;reader.onload=async e=>{currentOverlaySettings={imageData:e.target.result,visible:true,scale:1,x:0,y:0,opacity:1,locked:false};const settingsToSave={x:0,y:0,opacity:1,scale:1,visible:true,locked:false};try{await chrome.storage.local.set({[STORAGE_KEYS.overlayImage]:currentOverlaySettings.imageData,[STORAGE_KEYS.overlaySettings]:settingsToSave});updateOverlayControlsUI();showOverlayControls();sendMessageToContentScript("create",{imageData:currentOverlaySettings.imageData,settings:settingsToSave})}catch(storageError){showStatus("Failed to save overlay image.",true);}};reader.onerror=()=>{showStatus("Error reading image file.",true);};reader.readAsDataURL(file)}else if(file){showStatus("Please select a valid image file.",true);DOMElements.imageUpload.value=""}});
         if (DOMElements.overlayPosX) DOMElements.overlayPosX.addEventListener("input", () => handleOverlaySettingChange("x", parseInt(DOMElements.overlayPosX.value) || 0));
         if (DOMElements.overlayPosY) DOMElements.overlayPosY.addEventListener("input", () => handleOverlaySettingChange("y", parseInt(DOMElements.overlayPosY.value) || 0));
