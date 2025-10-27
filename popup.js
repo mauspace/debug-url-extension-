@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
         iconRulerMode: 'iconRulerMode',
         overlayPosX: 'overlayPosX', overlayPosY: 'overlayPosY', overlayOpacity: 'overlayOpacity',
         overlayOpacityValue: 'overlayOpacityValue', overlayScaleInput: 'overlayScaleInput',
-        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay'
+        resetOverlayButton: 'resetOverlay', loadingSpinnerOverlay: 'loadingSpinnerOverlay',
+        clearSuggestionsButton: 'clearSuggestionsButton', // <-- ADD THIS LINE
     };
     const STORAGE_KEYS = {
         theme: 'toolkitTheme', // <-- ADD THIS
@@ -258,6 +259,31 @@ if (DOMElements.openOptionsPageLink) {
 }
 
         // --- ATTACH ALL EVENT LISTENERS ---
+        if (DOMElements.clearSuggestionsButton) {
+    DOMElements.clearSuggestionsButton.addEventListener('click', async () => {
+        // 1. Ask the user for confirmation
+        if (confirm("Are you sure you want to clear ALL saved parameter name and value suggestions? This cannot be undone.")) {
+            setControlsDisabled('urlTools', true);
+            try {
+                // 2. Remove the suggestions from storage
+                await chrome.storage.sync.remove([STORAGE_KEYS.paramNames, STORAGE_KEYS.paramValues]);
+                
+                // 3. Refresh the UI to reflect the changes
+                await updateParamNameDropdown();
+                await renderValueSuggestions();
+                
+                // 4. Show a success message to the user
+                showStatus("All suggestions cleared successfully.", false);
+            } catch (error) {
+                console.error("Error clearing suggestions:", error);
+                showStatus("Failed to clear suggestions.", true);
+            } finally {
+                setControlsDisabled('urlTools', false);
+            }
+        }
+    });
+}
+
         if (DOMElements.addParamButton) DOMElements.addParamButton.addEventListener('click', async () => {
             const paramNameToUse = (DOMElements.paramNameCustom?.value.trim() || DOMElements.paramNameSelect?.value) || '';
             const paramValueToUse = DOMElements.paramValue?.value.trim() || '';
